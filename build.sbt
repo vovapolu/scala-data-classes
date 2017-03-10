@@ -6,3 +6,4 @@ inThisBuild(
   )
 )
 
+libraryDependencies ++= shapeless.value
