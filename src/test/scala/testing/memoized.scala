@@ -1,6 +1,6 @@
 package testing
 
-// @data(memoize = true, valHashCode = true)
+// @data(memoize = true, valHashCode = true, valString = true)
 // class Bar(a: Boolean, s: String)
 final class Bar private (
   private[this] val _a: Boolean,
@@ -10,7 +10,7 @@ final class Bar private (
   def a: Boolean = _a
   def s: String = _s
 
-  override def toString(): String = ???
+  override val toString: String = null
   override val hashCode: Int = 0
   override def equals(o: Any): Boolean = o match {
     case that: Bar if this eq that => true // because of memoisation!
