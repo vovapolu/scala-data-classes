@@ -31,7 +31,7 @@ object Bar extends ((Boolean, String) => Bar) {
   // WeakHashMap is not ideal for performance. What we really want is
   // a non-blocking WeakHashSet[Bar] that takes a custom Equality and
   // "memoize = true" should always generate a val hashCode.
-  private val cache: java.util.WeakHashMap[(Boolean, String), Bar] = null
+  private[this] val cache: java.util.WeakHashMap[(Boolean, String), Bar] = null
 
   def apply(a: Boolean, s: String): Bar = synchronized {
     val key = (a, s)

@@ -1,6 +1,6 @@
 package testing
 
-// @data(optimiseRepr = true)
+// @data(optimiseRepr = true, optimiseString = true, memoizeStrings = true)
 // class Baz(a: Option[Boolean], b: Option[Boolean], s: Option[String])
 final class Baz private (
   private[this] val _bitmask: Long,
@@ -21,12 +21,12 @@ final class Baz private (
   def s: Option[String] = {
     if ((_bitmask & 0x04) != 0) None
     else if ((_bitmask & 0x05) != 0) Some(null)
-    else Some(new String(_s))
+    else Some(new String(_s)) // optimiseString
   }
 
   override def toString(): String = ???
   override def hashCode: Int = ???
-  override def equals(o: Any): Boolean = ???
+  override def equals(o: Any): Boolean = ??? // can't use eq for _s when optimiseString is used
 
   // should use the public field accesors, not the internal ones
   private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
@@ -38,6 +38,9 @@ final class Baz private (
 
 object Baz extends ((Option[Boolean], Option[Boolean], Option[String]) => Baz) {
   private[this] def readResolve(raw: Baz.type): Baz.type = Baz
+
+  // optional heap optimisation: string fields are memoized
+  private[this] val string_cache: java.util.WeakHashMap[String, Boolean] = null
 
   def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Baz = ???
   def unapply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Option[Baz] = ???
