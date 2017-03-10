@@ -22,17 +22,17 @@ final class Foo[+T] private (
   override def equals(o: Any): Boolean = ???
 
   // should use the public field accesors, not the internal ones
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = ???
-  private def readObject(in: java.io.ObjectInputStream): Unit = ???
+  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
+  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ???
 
   // should go via the companion to force whatever logic we put there
-  private def readResolve(raw: Foo[_]) = Foo(raw.a, raw.s, raw.t)
+  private[this] def readResolve(raw: Foo[_]) = Foo(raw.a, raw.s, raw.t)
 
 }
 
 object Foo /*extends Function3[Boolean, String, T, Foo[T]]*/ {
   // incase somebody serialises the companion (it happens!)
-  private def readResolve(raw: Foo.type) = Foo
+  private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   def apply[T](a: Boolean, s: String, t: T): Foo[T] = ???
   def unapply[T](a: Boolean, s: String, t: T): Option[Foo[T]] = ???

@@ -18,15 +18,15 @@ final class Bar private (
   }
 
   // should use the public field accesors, not the internal ones
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = ???
-  private def readObject(in: java.io.ObjectInputStream): Unit = ???
+  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
+  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ???
 
-  private def readResolve(raw: Bar) = Bar(raw.a, raw.s)
+  private[this] def readResolve(raw: Bar) = Bar(raw.a, raw.s)
 
 }
 
 object Bar extends ((Boolean, String) => Bar) {
-  private def readResolve(raw: Bar.type) = Bar
+  private[this] def readResolve(raw: Bar.type): Bar.type = Bar
 
   // WeakHashMap is not ideal for performance. What we really want is
   // a non-blocking WeakHashSet[Bar] that takes a custom Equality and

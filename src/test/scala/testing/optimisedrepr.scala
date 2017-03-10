@@ -29,15 +29,15 @@ final class Baz private (
   override def equals(o: Any): Boolean = ???
 
   // should use the public field accesors, not the internal ones
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = ???
-  private def readObject(in: java.io.ObjectInputStream): Unit = ???
+  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
+  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ???
 
-  private def readResolve(raw: Baz) = Baz(raw.a, raw.b, raw.s)
+  private[this] def readResolve(raw: Baz) = Baz(raw.a, raw.b, raw.s)
 
 }
 
 object Baz extends ((Option[Boolean], Option[Boolean], Option[String]) => Baz) {
-  private def readResolve(raw: Baz.type) = Baz
+  private[this] def readResolve(raw: Baz.type): Baz.type = Baz
 
   def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Baz = ???
   def unapply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Option[Baz] = ???
