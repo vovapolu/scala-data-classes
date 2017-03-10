@@ -36,7 +36,7 @@ final class Baz private (
 
 }
 
-object Baz extends ((Option[Boolean], Option[Boolean], Option[String]) => Baz) {
+final object Baz extends ((Option[Boolean], Option[Boolean], Option[String]) => Baz) {
   private[this] def readResolve(raw: Baz.type): Baz.type = Baz
 
   // optional heap optimisation: string fields are memoized

@@ -30,7 +30,7 @@ final class Foo[+T] private (
 
 }
 
-object Foo /*extends Function3[Boolean, String, T, Foo[T]]*/ {
+final object Foo /*extends Function3[Boolean, String, T, Foo[T]]*/ {
   // incase somebody serialises the companion (it happens!)
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
