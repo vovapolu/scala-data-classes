@@ -34,7 +34,7 @@ final class Foo private (
   override def hashCode: Int = ???
   override def equals(o: Any): Boolean = ??? // NOTE can't use eq for _s when optimiseHeapString is used
 
-  private[this] def readResolve(raw: Foo) = Foo(raw.a, raw.b, raw.s)
+  private[this] def readResolve: Foo = Foo(a, b, s)
 
 }
 

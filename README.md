@@ -55,4 +55,6 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
 
 For this example: 3 `Option` wrappers, `Boolean` boxing, `Boolean` packing, `String` wrapping, we save 6 references (384 bits) per instance.
 
+Note that changing the heap representation has implications for the serialised form (the internal version is used). [#9](https://github.com/fommil/scala-data-classes/issues/9) discusses why this is the case (we'd prefer to use the public API).
+
 Further ideas for heap optimisation should go in [#3](https://github.com/fommil/scala-data-classes/issues/3)

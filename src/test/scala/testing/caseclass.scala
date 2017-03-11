@@ -34,7 +34,7 @@ final class Foo[+T] private (
   }
 
   // should go via the companion to force whatever logic we put there
-  private[this] def readResolve(raw: Foo[_]) = Foo(raw.a, raw.s, raw.t, raw.i)
+  private[this] def readResolve(): Foo[T] = Foo(a, s, t, i)
 
 }
 

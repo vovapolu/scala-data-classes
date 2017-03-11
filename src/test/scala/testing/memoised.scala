@@ -19,7 +19,7 @@ final class Foo private (
     case _                         => false
   }
 
-  private[this] def readResolve(raw: Foo) = Foo(raw.a, raw.s)
+  private[this] def readResolve(): Foo = Foo(a, s)
 
 }
 
