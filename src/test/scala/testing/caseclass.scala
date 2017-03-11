@@ -48,13 +48,21 @@ final object Foo {
   def unapply[T](f: Foo[T]): Option[(Boolean, String, T, Int)] = Some((f.a, f.s, f.t, f.i))
 
   // if there are no type parameters on the class, this can be a val
-  import shapeless._, shapeless.labelled._, shapeless.syntax.singleton._
-  implicit def LabelledGenericFoo[T, TR](t: T)(implicit lg_t: LabelledGeneric.Aux[T, TR]): LabelledGeneric[Foo[T]] = {
-    // if only scala had language support for singleton symbols...
-    val a_tpe = 'a.narrow
-    val s_tpe = 's.narrow
-    val t_tpe = 't.narrow
-    val i_tpe = 'i.narrow
+  // (*sigh* if only scala had language support for singleton symbols...)
+  import shapeless.{::, HNil, LabelledGeneric}
+  import shapeless.labelled.{FieldType, field}
+  import shapeless.syntax.singleton._
+  // it might be possible to avoid these tagged symbols inside scala.meta
+  val a_tpe = 'a.narrow
+  val s_tpe = 's.narrow
+  val t_tpe = 't.narrow
+  val i_tpe = 'i.narrow
+  implicit def LabelledGenericFoo[T, TR](
+    t: T
+  )(
+    implicit
+    lg_t: LabelledGeneric.Aux[T, TR]
+  ): LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, TR] :: FieldType[i_tpe.type, Int] :: HNil] =
     new LabelledGeneric[Foo[T]] {
       override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, TR] :: FieldType[i_tpe.type, Int] :: HNil
 
@@ -62,12 +70,13 @@ final object Foo {
         field[a_tpe.type](f.a) ::
           field[s_tpe.type](f.s) ::
           field[t_tpe.type](lg_t.to(f.t)) ::
-          field[i_tpe.type]('i ->> f.i) ::
+          field[i_tpe.type](f.i) ::
           HNil
 
-      override def from(r: Repr): Foo[T] = ???
+      override def from(r: Repr): Foo[T] = r match {
+        case a :: s :: t_repr :: i :: HNil => Foo(a, s, lg_t.from(t_repr), i)
+      }
 
     }
 
-  }
 }
