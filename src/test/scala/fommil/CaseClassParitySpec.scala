@@ -82,7 +82,7 @@ class CaseClassParitySpec extends FlatSpec {
 
     generic.to(foo) should equal(repr)
     //generic.from(repr) should equal(foo)
-
+    generic.from(generic.to(foo)) should equal(foo)
   }
 
 }
