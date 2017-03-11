@@ -45,7 +45,7 @@ final object Foo extends ((Boolean, String) => Foo) {
       created
     }
   }
-  def unapply(a: Boolean, s: String): Option[Foo] = ???
+  def unapply(f: Foo): Option[(Boolean, String)] = ???
 
   // no type parameters, so this can be a val
   implicit val LabelledGenericFoo: shapeless.LabelledGeneric[Foo] = null

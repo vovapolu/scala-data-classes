@@ -42,7 +42,7 @@ final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => 
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Foo = ???
-  def unapply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Option[Foo] = ???
+  def unapply(f: Foo): Option[(Option[Boolean], Option[Boolean], Option[String])] = ???
 
   // no type parameters, so this can be a val
   implicit val LabelledGenericFoo: shapeless.LabelledGeneric[Foo] = null

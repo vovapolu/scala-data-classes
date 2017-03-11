@@ -44,8 +44,8 @@ final object Foo {
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   // note, default value on `i`
-  def apply[T](a: Boolean, s: String, t: T, i: Int = 0): Foo[T] = ???
-  def unapply[T](a: Boolean, s: String, t: T, i: Int): Option[Foo[T]] = ???
+  def apply[T](a: Boolean, s: String, t: T, i: Int = 0): Foo[T] = new Foo(a, s, t, i)
+  def unapply[T](f: Foo[T]): Option[(Boolean, String, T, Int)] = Some((f.a, f.s, f.t, f.i))
 
   // if there are no type parameters on the class, this can be a val
   implicit def LabelledGenericFoo[T](t: T): shapeless.LabelledGeneric[Foo[T]] = ???
