@@ -10,7 +10,8 @@ libraryDependencies ++= Seq(
  "org.ensime" %% "pcplod" % "1.2.0" % "test",
  "org.typelevel" %% "cats" % "0.9.0" % "test",
  "org.typelevel" %% "kittens" % "1.0.0-M9" % "test",
- "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.4" % "test"
+ "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.4" % "test",
+ "com.github.fommil" %% "spray-json-shapeless" % "1.3.0" % "test"
 ) ++ shapeless.value.map(_ % "test")
 
 javaOptions in Test ++= Seq(

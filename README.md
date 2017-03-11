@@ -23,6 +23,7 @@ User-defined methods and fields are being debated in [#5](https://github.com/fom
 
 - `product` (i.e. implementing `Product`) will be disabled by default because it encourages runtime inspection instead of compiletime safety.
 - `checkSerializable` (i.e. checking all parameters for `Serializable`) will be enabled by default because this is the sort of thing that should be checked at compiletime.
+- `companionExtends` disabled by default for non-parametric classes, makes the companion extend a function. [Has binary compatibility consequences](https://issues.scala-lang.org/browse/SI-3664).
 
 An implicit `shapeless.LabelledGeneric[Foo[T]]` is generated on the companion. This saves shapeless from having to derive one at every call site, speeding up downstream compiles.
 

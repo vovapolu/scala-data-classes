@@ -24,6 +24,8 @@ final class Foo private (
 }
 
 final object Foo extends ((Boolean, String) => Foo) {
+  override def toString = "Foo"
+
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   // WeakHashMap is not ideal for performance. What we really want is

@@ -41,6 +41,8 @@ final class Foo[+T] private (
 
 // I'm not sure how to extend Function when there are type parameters...
 final object Foo {
+  override def toString = "Foo"
+
   // incase somebody serialises the companion (it happens!)
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 

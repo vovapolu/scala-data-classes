@@ -39,6 +39,8 @@ final class Foo private (
 }
 
 final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => Foo) {
+  override def toString = "Foo"
+
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Foo = ???

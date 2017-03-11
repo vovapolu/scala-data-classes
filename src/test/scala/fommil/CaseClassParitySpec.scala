@@ -14,12 +14,13 @@ class CaseClassParitySpec extends FlatSpec {
 
   val foo = Foo(true, "hello", "world", 1)
 
-  "@data(product) Foo[+]" should "have equals, hashCode and toString defined" in {
+  "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
     foo.hashCode shouldBe -1034845328
     foo should equal(foo)
     foo should not be theSameInstanceAs(Foo(true, "hello", "world", 1))
     foo should not equal (Foo(false, "hello", "world", 1))
     foo.toString should equal("Foo(true,hello,world,1)")
+    Foo.toString should equal("Foo")
   }
 
   it should "not expose its constructor" in {
@@ -53,6 +54,7 @@ class CaseClassParitySpec extends FlatSpec {
   }
 
   it should "implement Product" in {
+    foo.productPrefix should equal("Foo")
     foo.productIterator.toList should contain theSameElementsInOrderAs (List(true, "hello", "world", 1))
   }
 
@@ -86,15 +88,26 @@ class CaseClassParitySpec extends FlatSpec {
     from(to(foo)) should equal(foo)
   }
 
-  it should "allow user-land derivations" in {
-    import cats._
-    import cats.implicits._
-    import cats.derived._, semigroup._, legacy._
+  it should "allow user-land Semigroup derivation" in {
+    // import cats._
+    // import cats.implicits._
+    // import cats.derived._, semigroup._, legacy._
 
     // trying to make it easy... but this shouldn't be needed
-    implicit val G: Generic[Foo[String]] = cachedImplicit
+    // implicit val G: Generic[Foo[String]] = cachedImplicit
 
-    implicit val SemiGroupFoo: Semigroup[Foo[String]] = cachedImplicit
+    //implicit val SemiGroupFoo: Semigroup[Foo[String]] = cachedImplicit
+  }
+
+  // redundant, just using it becuase I am familiar with the required imports
+  it should "allow user-land JsonFormat derivation" in {
+    import spray.json._
+    import fommil.sjs.FamilyFormats._
+
+    // trying to make it easy... but this shouldn't be needed
+    import Foo.LabelledGenericFoo
+
+    implicit val J: JsonFormat[Foo[String]] = cachedImplicit
   }
 
 }
