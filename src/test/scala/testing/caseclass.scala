@@ -50,7 +50,7 @@ final object Foo {
 
   // if there are no type parameters on the class, this can be a val
   // (*sigh* if only scala had language support for singleton symbols...)
-  import shapeless.{::, HNil, LabelledGeneric}
+  import shapeless.{::, HNil, Generic, LabelledGeneric}
   import shapeless.labelled.{FieldType, field}
   import shapeless.syntax.singleton._
   // it might be possible to avoid these tagged symbols inside scala.meta
@@ -58,11 +58,21 @@ final object Foo {
   val s_tpe = 's.narrow
   val t_tpe = 't.narrow
   val i_tpe = 'i.narrow
-  type ReprFoo[T] = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
+  type LabelledGenericRepr[T] = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
+  type GenericRepr[T] = Boolean :: String :: T :: Int :: HNil
 
-  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], ReprFoo[T]] =
+  implicit def GenericFoo[T]: Generic.Aux[Foo[T], GenericRepr[T]] =
+    new Generic[Foo[T]] {
+      override type Repr = GenericRepr[T]
+      override def to(f: Foo[T]): Repr = f.a :: f.s :: f.t :: f.i :: HNil
+      override def from(r: Repr): Foo[T] = r match {
+        case a :: s :: t :: i :: HNil => Foo(a, s, t, i)
+      }
+    }
+
+  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], LabelledGenericRepr[T]] =
     new LabelledGeneric[Foo[T]] {
-      override type Repr = ReprFoo[T]
+      override type Repr = LabelledGenericRepr[T]
 
       override def to(f: Foo[T]): Repr =
         field[a_tpe.type](f.a) ::

@@ -13,7 +13,6 @@ class CaseClassParitySpec extends FlatSpec {
   // final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)
 
   val foo = Foo(true, "hello", "world", 1)
-  implicit val LG: LabelledGeneric[Foo[String]] = cachedImplicit
 
   "@data(product) Foo[+]" should "have equals, hashCode and toString defined" in {
     foo.hashCode shouldBe -1034845328
@@ -73,10 +72,29 @@ class CaseClassParitySpec extends FlatSpec {
     recovered should not be theSameInstanceAs(foo)
   }
 
+  it should "have a Generic" in {
+    implicit val G: Generic[Foo[String]] = cachedImplicit
+    import G._
+
+    from(to(foo)) should equal(foo)
+  }
+
   it should "have a LabelledGeneric" in {
+    implicit val LG: LabelledGeneric[Foo[String]] = cachedImplicit
     import LG._
 
     from(to(foo)) should equal(foo)
+  }
+
+  it should "allow user-land derivations" in {
+    import cats._
+    import cats.implicits._
+    import cats.derived._, semigroup._, legacy._
+
+    // trying to make it easy... but this shouldn't be needed
+    implicit val G: Generic[Foo[String]] = cachedImplicit
+
+    implicit val SemiGroupFoo: Semigroup[Foo[String]] = cachedImplicit
   }
 
 }
