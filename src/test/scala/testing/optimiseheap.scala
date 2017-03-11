@@ -34,10 +34,6 @@ final class Foo private (
   override def hashCode: Int = ???
   override def equals(o: Any): Boolean = ??? // NOTE can't use eq for _s when optimiseHeapString is used
 
-  // should use the public field accesors, not the internal ones
-  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
-  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ???
-
   private[this] def readResolve(raw: Foo) = Foo(raw.a, raw.b, raw.s)
 
 }

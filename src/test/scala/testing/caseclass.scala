@@ -33,22 +33,6 @@ final class Foo[+T] private (
     case _         => false
   }
 
-  @throws[java.io.IOException]
-  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
-    out.writeBoolean(a)
-    out.writeUTF(s)
-    out.writeObject(t) // NOTE: not checking Serializable
-    out.writeInt(i)
-  }
-  @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
-  private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
-    _a = in.readBoolean()
-    _s = in.readUTF()
-    _t = in.readObject().asInstanceOf[T]
-    _i = in.readInt
-  }
-
   // should go via the companion to force whatever logic we put there
   private[this] def readResolve(raw: Foo[_]) = Foo(raw.a, raw.s, raw.t, raw.i)
 

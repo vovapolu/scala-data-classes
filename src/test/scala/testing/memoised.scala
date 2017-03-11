@@ -19,10 +19,6 @@ final class Foo private (
     case _                         => false
   }
 
-  // should use the public field accesors, not the internal ones
-  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
-  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ???
-
   private[this] def readResolve(raw: Foo) = Foo(raw.a, raw.s)
 
 }
