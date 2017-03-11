@@ -17,6 +17,7 @@ final class Foo[+T] private (
 
   def copy[S >: T](a: Boolean = a, s: String = s, t: S = t, i: Int = i): Foo[S] = Foo(a, s, t, i)
 
+  override def productPrefix = "Foo"
   override def productArity: Int = 4
   override def productElement(n: Int): Any = (n: @scala.annotation.switch) match {
     case 0 => a
@@ -57,24 +58,19 @@ final object Foo {
   val s_tpe = 's.narrow
   val t_tpe = 't.narrow
   val i_tpe = 'i.narrow
-  implicit def LabelledGenericFoo[T, TR](
-    t: T
-  )(
-    implicit
-    lg_t: LabelledGeneric.Aux[T, TR]
-  ): LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, TR] :: FieldType[i_tpe.type, Int] :: HNil] =
+  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
     new LabelledGeneric[Foo[T]] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, TR] :: FieldType[i_tpe.type, Int] :: HNil
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
 
       override def to(f: Foo[T]): Repr =
         field[a_tpe.type](f.a) ::
           field[s_tpe.type](f.s) ::
-          field[t_tpe.type](lg_t.to(f.t)) ::
+          field[t_tpe.type](f.t) ::
           field[i_tpe.type](f.i) ::
           HNil
 
       override def from(r: Repr): Foo[T] = r match {
-        case a :: s :: t_repr :: i :: HNil => Foo(a, s, lg_t.from(t_repr), i)
+        case a :: s :: t :: i :: HNil => Foo(a, s, t, i)
       }
 
     }
