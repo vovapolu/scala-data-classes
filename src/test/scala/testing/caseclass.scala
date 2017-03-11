@@ -15,7 +15,7 @@ final class Foo[+T] private (
   def t: T = _t
   def i: Int = _i
 
-  def copy[S >: T](a: Boolean = a, s: String = s, t: S = t, i: Int = i): Foo[S] = ???
+  def copy[S >: T](a: Boolean = a, s: String = s, t: S = t, i: Int = i): Foo[S] = Foo(a, s, t, i)
 
   override def productArity: Int = 4
   override def productElement(n: Int): Any = (n: @scala.annotation.switch) match {
@@ -27,13 +27,27 @@ final class Foo[+T] private (
   override def canEqual(o: Any): Boolean = o != null && o.isInstanceOf[Foo[_]]
 
   override def toString(): String = s"Foo($a,$s,$t,$i)"
-  override def hashCode(): Int = ???
-  override def equals(o: Any): Boolean = ???
+  override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
+  override def equals(o: Any): Boolean = o match {
+    case f: Foo[_] => a == f.a && s == f.s && t == f.t && i == f.i
+    case _         => false
+  }
 
-  // should use the public field accesors, not the internal ones (so
-  // this template can be re-used)
-  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ???
-  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ???
+  @throws[java.io.IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.writeBoolean(a)
+    out.writeUTF(s)
+    out.writeObject(t) // NOTE: not checking Serializable
+    out.writeInt(i)
+  }
+  @throws[java.io.IOException]
+  @throws[ClassNotFoundException]
+  private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+    _a = in.readBoolean()
+    _s = in.readUTF()
+    _t = in.readObject().asInstanceOf[T]
+    _i = in.readInt
+  }
 
   // should go via the companion to force whatever logic we put there
   private[this] def readResolve(raw: Foo[_]) = Foo(raw.a, raw.s, raw.t, raw.i)
