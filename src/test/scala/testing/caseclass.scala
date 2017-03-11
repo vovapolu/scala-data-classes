@@ -58,9 +58,11 @@ final object Foo {
   val s_tpe = 's.narrow
   val t_tpe = 't.narrow
   val i_tpe = 'i.narrow
-  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
+  type ReprFoo[T] = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
+
+  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], ReprFoo[T]] =
     new LabelledGeneric[Foo[T]] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
+      override type Repr = ReprFoo[T]
 
       override def to(f: Foo[T]): Repr =
         field[a_tpe.type](f.a) ::

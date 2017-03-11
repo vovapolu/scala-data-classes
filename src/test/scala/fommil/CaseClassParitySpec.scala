@@ -5,6 +5,7 @@ import java.io._
 import org.scalatest._
 import org.scalatest.Matchers._
 import testing.caseclass._
+import shapeless._
 
 class CaseClassParitySpec extends FlatSpec {
   // should behave like:
@@ -12,6 +13,7 @@ class CaseClassParitySpec extends FlatSpec {
   // final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)
 
   val foo = Foo(true, "hello", "world", 1)
+  implicit val LG: LabelledGeneric[Foo[String]] = cachedImplicit
 
   "@data(product) Foo[+]" should "have equals, hashCode and toString defined" in {
     foo.hashCode shouldBe -1034845328
@@ -72,17 +74,9 @@ class CaseClassParitySpec extends FlatSpec {
   }
 
   it should "have a LabelledGeneric" in {
-    import shapeless._
-    import shapeless._
-    import shapeless.syntax.singleton._
+    import LG._
 
-    implicit val generic: LabelledGeneric[Foo[String]] = cachedImplicit
-
-    val repr = ('a ->> true) :: ('s ->> "hello") :: ('t ->> "world") :: ('i ->> 1) :: HNil
-
-    generic.to(foo) should equal(repr)
-    //generic.from(repr) should equal(foo)
-    generic.from(generic.to(foo)) should equal(foo)
+    from(to(foo)) should equal(foo)
   }
 
 }
