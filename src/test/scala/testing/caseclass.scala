@@ -48,5 +48,26 @@ final object Foo {
   def unapply[T](f: Foo[T]): Option[(Boolean, String, T, Int)] = Some((f.a, f.s, f.t, f.i))
 
   // if there are no type parameters on the class, this can be a val
-  implicit def LabelledGenericFoo[T](t: T): shapeless.LabelledGeneric[Foo[T]] = ???
+  import shapeless._, shapeless.labelled._, shapeless.syntax.singleton._
+  implicit def LabelledGenericFoo[T, TR](t: T)(implicit lg_t: LabelledGeneric.Aux[T, TR]): LabelledGeneric[Foo[T]] = {
+    // if only scala had language support for singleton symbols...
+    val a_tpe = 'a.narrow
+    val s_tpe = 's.narrow
+    val t_tpe = 't.narrow
+    val i_tpe = 'i.narrow
+    new LabelledGeneric[Foo[T]] {
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, TR] :: FieldType[i_tpe.type, Int] :: HNil
+
+      override def to(f: Foo[T]): Repr =
+        field[a_tpe.type](f.a) ::
+          field[s_tpe.type](f.s) ::
+          field[t_tpe.type](lg_t.to(f.t)) ::
+          field[i_tpe.type]('i ->> f.i) ::
+          HNil
+
+      override def from(r: Repr): Foo[T] = ???
+
+    }
+
+  }
 }
