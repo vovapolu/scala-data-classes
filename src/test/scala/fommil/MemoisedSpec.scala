@@ -10,7 +10,8 @@ import org.slf4j.bridge.SLF4JBridgeHandler
 import testing.memoised._
 import shapeless._
 
-class MemoisedSpec extends FlatSpec {
+// intentionally parallel to try and flush out concurrency issues
+class MemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()
   val log = LoggerFactory.getLogger(this.getClass)
@@ -62,7 +63,6 @@ class MemoisedSpec extends FlatSpec {
     recovered should be theSameInstanceAs (foo)
   }
 
-  /*
   it should "have a Generic" in {
     implicit val G: Generic[Foo] = cachedImplicit
     import G._
@@ -114,7 +114,6 @@ class MemoisedSpec extends FlatSpec {
   }
 
   it should "have memoised string fields" in {
-    fail
+    Foo(true, "stringy").s should be theSameInstanceAs (Foo(false, "stringy").s)
   }
-   */
 }
