@@ -97,15 +97,6 @@ final object Foo {
       override def describe: String = s"Foo[Boolean,String,${tt.describe},Int]"
     }
 
-  implicit def GenericFoo[T]: Generic.Aux[Foo[T], Boolean :: String :: T :: Int :: HNil] =
-    new Generic[Foo[T]] {
-      override type Repr = Boolean :: String :: T :: Int :: HNil
-      override def to(f: Foo[T]): Repr = f.a :: f.s :: f.t :: f.i :: HNil
-      override def from(r: Repr): Foo[T] = r match {
-        case a :: s :: t :: i :: HNil => Foo(a, s, t, i)
-      }
-    }
-
   implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
     new LabelledGeneric[Foo[T]] {
       override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
@@ -117,9 +108,16 @@ final object Foo {
           field[i_tpe.type](f.i) ::
           HNil
 
+      override def from(r: Repr): Foo[T] = GenericFoo.from(r)
+    }
+
+  implicit def GenericFoo[T]: Generic.Aux[Foo[T], Boolean :: String :: T :: Int :: HNil] =
+    new Generic[Foo[T]] {
+      override type Repr = Boolean :: String :: T :: Int :: HNil
+      override def to(f: Foo[T]): Repr = LabelledGenericFoo[T].to(f)
       override def from(r: Repr): Foo[T] = r match {
         case a :: s :: t :: i :: HNil => Foo(a, s, t, i)
       }
-
     }
+
 }
