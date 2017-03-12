@@ -36,7 +36,7 @@ Memoisation uses best endeavours to re-use existing instances instead of creatin
 High levels of memoisation in a JVM mean that the overall heap size for a `class` can be **dramatically** reduced in some cases, but at the cost of extra CPU cycles during construction and GC pressure. Also, the incidence of instance-based equality hits go up (so `equals` can get faster!).
 
 ```scala
-@data(memoise = true, memoiseStrings = true, memoiseHashCode = true, memoiseToString = true)
+@data(memoise = true, memoiseRefs = Seq('s), memoiseHashCode = true, memoiseToString = true, memoiseStrong = true)
 class Foo(a: Boolean, s: String)
 ```
 
@@ -44,7 +44,7 @@ The following features are independent, but can be combined:
 
 - `memoise` uses an interner cache to reduce duplication on the heap (at the cost of lookup and GC pressure)
 - `memoiseRefs` (takes `Seq[Symbol]`) uses a memoisation cache for the selected `AnyRef` fields (at the cost of lookup and GC pressure)
-- `memoizeStringsIntern` special-cases `String` fields to use the JVM's `intern`
+- `memoizeStringsIntern` false by default, special-cases `String` fields to use the JVM's `intern` (trumps `memoiseRefs`)
 - `memoiseHashCode` stores the `hashCode` in a `val`, and uses this as a shortcut in `equals` (at the cost of initialisation and heap)
 - `memoiseToString` stores the `toString` in a `val` (at the cost of initialisation and heap)
 - `memoiseStrong` weak by default, means your instances are never garbage collected and `equals` is identity based (extreme caution!)
@@ -53,12 +53,12 @@ Further ideas for memoisation should go in [#6](https://github.com/fommil/scala-
 
 ### Implementation Note
 
-The JVM does not enable a cache that allows its contents to be garbage collected when no longer referenced by anywhere else in the system:
+It is not possible to write a cache on the JVM whose contents are garbage collected *iff* no longer referenced by anywhere else in the system:
 
 1. the user could be using weak / soft references.
-2. experiments showed that `WeakHashMap` is aggressively cleaned even when its keys are strongly referenced elsewhere. This may be a general problem with `WeakReference` and `SoftReference` (the latter to a lesser extend, but still without guarantees).
+2. experiments showed that `WeakHashMap` is aggressively cleaned even when its keys are strongly referenced elsewhere. This may be a general problem with `WeakReference` and `SoftReference` (the latter to a lesser extent, but still without guarantees).
 
-Therefore, value and identity equivalence can only be guaranteed if a strong reference cache is used, or if the JVM ever offers native support.
+Value and identity equivalence can only be guaranteed if a strong reference cache is used. The JVM would have to offer native support or GC hooks for this to work.
 
 See [#8](https://github.com/fommil/scala-data-classes/issues/8) for a way of speeding up `equals` for instances with value equality (but not reference equality), at the cost of even more heap.
 
@@ -77,6 +77,6 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
 
 For this example: 3 `Option` wrappers, `Boolean` boxing, `Boolean` packing, `String` wrapping, we save 6 references (384 bits) per instance.
 
-Note that changing the heap representation does not affect the serialised form (the publicly fields are used).
+Note that changing the heap representation does not affect the serialised form (the public visible fields are used).
 
 Further ideas for heap optimisation should go in [#3](https://github.com/fommil/scala-data-classes/issues/3)
