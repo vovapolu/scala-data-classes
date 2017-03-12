@@ -54,7 +54,7 @@ final class Foo[+T] private (
 
 }
 
-// I'm not sure how to extend Function when there are type parameters...
+// companionExtends would try to add `extends ((...) => Foo)` for non-parametric classes
 final object Foo {
   override def toString = "Foo"
 
@@ -67,7 +67,10 @@ final object Foo {
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   // note, default value on `i`
-  def apply[T](a: Boolean, s: String, t: T, i: Int = 0): Foo[T] = new Foo(a, s, t, i)
+  def apply[T](a: Boolean, s: String, t: T, i: Int = 0): Foo[T] = {
+    val foo = new Foo(a, s, t, i)
+    foo.synchronized(foo) // safe publication (we have vars, for serialisation)
+  }
   def unapply[T](f: Foo[T]): Option[(Boolean, String, T, Int)] = Some((f.a, f.s, f.t, f.i))
 
   // if there are no type parameters on the class, this can be a val
