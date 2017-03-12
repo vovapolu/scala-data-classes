@@ -52,7 +52,7 @@ final object Foo {
 
   // if there are no type parameters on the class, this can be a val
   // (*sigh* if only scala had language support for singleton symbols...)
-  import shapeless.{::, HNil, Generic, LabelledGeneric}
+  import shapeless.{::, HNil, Generic, LabelledGeneric, Typeable, TypeCase}
   import shapeless.labelled.{FieldType, field}
   import shapeless.syntax.singleton._
   // it might be possible to avoid these tagged symbols inside scala.meta
@@ -60,21 +60,32 @@ final object Foo {
   val s_tpe = 's.narrow
   val t_tpe = 't.narrow
   val i_tpe = 'i.narrow
-  type LabelledGenericRepr[T] = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
-  type GenericRepr[T] = Boolean :: String :: T :: Int :: HNil
 
-  implicit def GenericFoo[T]: Generic.Aux[Foo[T], GenericRepr[T]] =
+  implicit def TypeableFoo[T](implicit tt: Typeable[T]): Typeable[Foo[T]] =
+    new Typeable[Foo[T]] {
+      override def cast(t: Any): Option[Foo[T]] = {
+        val TC_T = TypeCase[T]
+        t match {
+          // create a new one to be safe (maybe too safe? ask Miles...)
+          case f @ Foo(b, s, TC_T(t), i) => Some(Foo(b, s, t, i))
+          case _                         => None
+        }
+      }
+      override def describe: String = s"Foo[Boolean,String,${tt.describe},Int]"
+    }
+
+  implicit def GenericFoo[T]: Generic.Aux[Foo[T], Boolean :: String :: T :: Int :: HNil] =
     new Generic[Foo[T]] {
-      override type Repr = GenericRepr[T]
+      override type Repr = Boolean :: String :: T :: Int :: HNil
       override def to(f: Foo[T]): Repr = f.a :: f.s :: f.t :: f.i :: HNil
       override def from(r: Repr): Foo[T] = r match {
         case a :: s :: t :: i :: HNil => Foo(a, s, t, i)
       }
     }
 
-  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], LabelledGenericRepr[T]] =
+  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
     new LabelledGeneric[Foo[T]] {
-      override type Repr = LabelledGenericRepr[T]
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
 
       override def to(f: Foo[T]): Repr =
         field[a_tpe.type](f.a) ::
@@ -88,5 +99,4 @@ final object Foo {
       }
 
     }
-
 }
