@@ -103,27 +103,25 @@ class CaseClassParitySpec extends FlatSpec {
     T.cast(Foo(true, "hello", 1L, 1)).value shouldBe Foo(true, "hello", 1L, 1)
   }
 
-  /*
-  it should "allow user-land Semigroup (Generic) derivation" in {
-    import cats._
+  it should "allow user-land Show (Generic) derivation" in {
+    import cats.Semigroup
     import cats.implicits._
-    import cats.derived._, semigroup._, legacy._
+    import cats.derived.semigroup._
+    import cats.derived.semigroup.legacy._
 
-    // trying to make it easy... but this shouldn't be needed
-    // implicit val G: Generic[Foo[String]] = cachedImplicit
-    import Foo.GenericFoo
+    implicit val B: Semigroup[Boolean] = new Semigroup[Boolean] {
+      override def combine(x: Boolean, y: Boolean): Boolean = x & y
+    }
 
-    implicit val SemiGroupFoo: Semigroup[Foo[String]] = cachedImplicit
+    implicit val S: Semigroup[Foo[String]] = cachedImplicit
+
+    S.combine(foo, foo) should equal(Foo(true, "hellohello", "worldworld", 2))
   }
-   */
 
   // redundant, just using it becuase I am familiar with the required imports
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {
     import spray.json._
     import fommil.sjs.FamilyFormats._
-
-    // trying to make it easy... but this shouldn't be needed
-    import Foo.LabelledGenericFoo
 
     implicit val J: JsonFormat[Foo[String]] = cachedImplicit
   }
