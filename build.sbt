@@ -7,6 +7,7 @@ inThisBuild(
 )
 
 libraryDependencies ++= Seq(
+ "com.google.guava" % "guava" % "21.0" % "test",
  "org.ensime" %% "pcplod" % "1.2.0" % "test",
  "org.typelevel" %% "cats" % "0.9.0" % "test",
  "org.typelevel" %% "kittens" % "1.0.0-M9" % "test",

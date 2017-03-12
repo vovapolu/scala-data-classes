@@ -4,9 +4,7 @@ package testing.memoised
 // class Foo(a: Boolean, s: String)
 final class Foo private (
   private[this] var _a: Boolean,
-  private[this] var _s: String,
-  // key is used in the memoisation cache (stops it being GCd)
-  private[this] val _key: (Boolean, String)
+  private[this] var _s: String
 ) extends Serializable {
 
   def a: Boolean = _a
@@ -59,63 +57,35 @@ final object Foo extends ((Boolean, String) => Foo) {
   @throws[java.io.ObjectStreamException]
   private[this] def readResolve(raw: Foo.type): Any = Foo
 
-  // WeakHashMap is not ideal for performance. What we really want is
-  // a non-blocking WeakHashSet[Foo] that takes a custom Equality.
-  private[this] val memoised_cache = new java.util.WeakHashMap[(Boolean, String), java.lang.ref.WeakReference[Foo]]
-
-  // notes on this impl:
-  // - putIfAbsent doesn't have the correct semantics for WeakReference values
-
-  // this is an alternative to String.intern, which uses a global cache
-  // (we might want to make memoizeStringsIntern an option, sometimes useful)
-  private[this] val memoisedStrings_cache = new java.util.WeakHashMap[String, java.lang.ref.WeakReference[String]]
-  private[this] def memoisedStrings(s: String): String = {
-    // double-checked locking
-    val first = {
-      val weak = memoisedStrings_cache.get(s)
-      if (weak == null) null else weak.get
-    }
-    if (first != null) first else memoisedStrings_cache.synchronized {
-      val got = {
-        val weak = memoisedStrings_cache.get(s)
-        if (weak == null) null else weak.get
-      }
-      if (got != null) got else {
-        memoisedStrings_cache.put(s, new java.lang.ref.WeakReference(s))
-        s
-      }
+  // What we really want is a non-blocking SoftHashSet[Foo] that takes
+  // a custom Equality and *guarantees* that something will never be
+  // removed if it is strongly referenced elsewhere. WeakHashMap
+  // aggressively cleans key references, even if they are strongly
+  // referenced, Guava's Cache uses identity equality on the keys and
+  // Interner uses instance equality (which in our case is identity
+  // equality). To use Interner we have to wrap our objects in
+  // something with value equality (plus we're not sure what the GC
+  // semantics are).
+  private class FooWithValueEquality(val f: Foo) {
+    override def toString: String = f.toString
+    override def hashCode: Int = f.hashCode
+    override def equals(o: Any): Boolean = o match {
+      case that: FooWithValueEquality => f.a == that.f.a && f.s == that.f.s
+      case _                          => false
     }
   }
 
+  private[this] val memoised_cache = com.google.common.collect.Interners.newStrongInterner[FooWithValueEquality]()
+
+  // this is an alternative to String.intern, which uses a global cache
+  // (we might want to make memoizeStringsIntern an option, sometimes useful)
+  private[this] val memoisedStrings_cache = com.google.common.collect.Interners.newStrongInterner[String]()
+
   def apply(a: Boolean, s: String): Foo = {
-    val s_cached = memoisedStrings(s)
-    val key = (a, s_cached)
-
-    // double-checked locking
-    val first = {
-      val weak = memoised_cache.get(key)
-      if (weak == null) null else weak.get
-    }
-
-    if (first != null) first else memoised_cache.synchronized {
-      val got = {
-        val weak = memoised_cache.get(key)
-        if (weak == null) null else {
-          val ref = weak.get
-          if (ref == null) // DEBUGGING
-            println(s"MISS Foo($a, $s) went cold")
-          ref
-        }
-      }
-      if (got != null) got else {
-        println(s"CREATING Foo($a (${System.identityHashCode(a)}), $s_cached (${System.identityHashCode(s_cached)})), in cache: ${memoised_cache.keySet()}")
-        val created = new Foo(a, s_cached, key)
-        // safe publication (we have vars, for serialisation)
-        val foo = created.synchronized(created)
-        memoised_cache.put(key, new java.lang.ref.WeakReference(created))
-        foo
-      }
-    }
+    val s_memoised = memoisedStrings_cache.intern(s)
+    val created = new Foo(a, s_memoised)
+    val safe = created.synchronized(created) // safe publish vars
+    memoised_cache.intern(new FooWithValueEquality(safe)).f
   }
   def unapply(f: Foo): Option[(Boolean, String)] = Some((f.a, f.s))
 
