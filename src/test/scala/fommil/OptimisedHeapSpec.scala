@@ -109,9 +109,7 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with Generat
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    implicit val S: Semigroup[Foo] = cachedImplicit
-
-    S.combine(foo, foo) should equal(Foo(Option(true), Option(true), Option("worldworld")))
+    (foo |+| foo) should equal(Foo(Option(true), Option(true), Option("worldworld")))
   }
 
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {

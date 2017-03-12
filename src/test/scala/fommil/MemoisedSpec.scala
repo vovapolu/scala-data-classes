@@ -95,9 +95,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    implicit val S: Semigroup[Foo] = cachedImplicit
-
-    S.combine(foo, foo) should be theSameInstanceAs (Foo(true, "hellohello"))
+    (foo |+| foo) should be theSameInstanceAs (Foo(true, "hellohello"))
   }
 
   // redundant, just using it becuase I am familiar with the required imports

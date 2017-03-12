@@ -113,9 +113,7 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    implicit val S: Semigroup[Foo[String]] = cachedImplicit
-
-    S.combine(foo, foo) should equal(Foo(true, "hellohello", "worldworld", 2))
+    (foo |+| foo) should equal(Foo(true, "hellohello", "worldworld", 2))
   }
 
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {
