@@ -25,7 +25,7 @@ User-defined methods and fields are being debated in [#5](https://github.com/fom
 - `checkSerializable` (i.e. checking all parameters for `Serializable`) will be enabled by default because this is the sort of thing that should be checked at compiletime.
 - `companionExtends` disabled by default for non-parametric classes, makes the companion extend a function. [Has binary compatibility consequences](https://issues.scala-lang.org/browse/SI-3664).
 
-An implicit `shapeless.LabelledGeneric[Foo[T]]` is generated on the companion. This saves shapeless from having to derive one at every call site, speeding up downstream compiles.
+Implicit instances of `shapeless.{Generic, LabelledGeneric, Typeable}` are generated on the companion. This saves shapeless from having to derive one at every call site, speeding up downstream compiles.
 
 ## Memoisation
 
