@@ -19,8 +19,14 @@ final class Foo private (
   override def equals(o: Any): Boolean = o match {
     //case null                      => false
     case that: Foo if this eq that => true // because of memoisation!
+
+    // can't seem to get guarantees out of the JVM, so need a fallback check
+    // case that: Foo if hashCode == that.hashCode => a == that.a && s == that.s
+
+    // DEBUGGING
     case that: Foo if a == that.a && s == that.s =>
-      throw new IllegalStateException(s"broken memoisation semantics")
+      throw new IllegalStateException(s"broken memoisation")
+
     case _ => false
   }
 
@@ -91,7 +97,7 @@ final object Foo extends ((Boolean, String) => Foo) {
       if (weak == null) null else weak.get
     }
 
-    val foo = if (first != null) first else memoised_cache.synchronized {
+    if (first != null) first else memoised_cache.synchronized {
       val got = {
         val weak = memoised_cache.get(key)
         if (weak == null) null else weak.get
@@ -99,14 +105,12 @@ final object Foo extends ((Boolean, String) => Foo) {
       if (got != null) got else {
         println(s"CREATING Foo($a, $s_cached)")
         val created = new Foo(a, s_cached, key)
+        // safe publication (we have vars, for serialisation)
+        val foo = created.synchronized(created)
         memoised_cache.put(key, new java.lang.ref.WeakReference(created))
-        created
+        foo
       }
     }
-
-    assert(foo != null)
-
-    foo.synchronized(foo) // safe publication (we have vars, for serialisation)
   }
   def unapply(f: Foo): Option[(Boolean, String)] = Some((f.a, f.s))
 
