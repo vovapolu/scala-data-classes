@@ -8,7 +8,7 @@ import org.scalatest.OptionValues._
 import testing.caseclass._
 import shapeless._
 
-class CaseClassParitySpec extends FlatSpec {
+class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
   // should behave like:
   //
   // final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)

@@ -30,9 +30,8 @@ final class Foo private (
 
   // // not added if memoiseStrong=true. hashCode shortcut only added if memoiseHashCode=true
   // override def equals(o: Any): Boolean = o match {
-  //   case that: Foo if this eq that              => true
-  //   case that: Foo if hashCode == that.hashCode => a == that.a && s == that.s
-  //   case _                                      => false
+  //   case that: Foo => (this eq that) || (hashCode == that.hashCode && a == that.a && s == that.s)
+  //   case _         => false
   // }
 
   @throws[java.io.IOException]
@@ -92,14 +91,13 @@ final object Foo extends ((Boolean, String) => Foo) with Serializable {
   import shapeless.syntax.singleton._
   val a_tpe = 'a.narrow
   val s_tpe = 's.narrow
-  implicit val TypeableFoo: Typeable[Foo] =
-    new Typeable[Foo] {
-      override def cast(t: Any): Option[Foo] = t match {
-        case f: Foo => Some(f) // no type params, so trivial
-        case _      => None
-      }
-      override def describe: String = s"Foo[Boolean,String]"
+  implicit val TypeableFoo: Typeable[Foo] = new Typeable[Foo] {
+    override def cast(t: Any): Option[Foo] = t match {
+      case f: Foo => Some(f) // no type params, so trivial
+      case _      => None
     }
+    override def describe: String = s"Foo[Boolean,String]"
+  }
 
   implicit val LabelledGenericFoo: LabelledGeneric.Aux[Foo, FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: HNil] =
     new LabelledGeneric[Foo] {

@@ -30,8 +30,8 @@ final class Foo[+T] private (
   override def toString(): String = s"Foo($a,$s,$t,$i)"
   override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
   override def equals(o: Any): Boolean = o match {
-    case f: Foo[_] => a == f.a && s == f.s && t == f.t && i == f.i
-    case _         => false
+    case that: Foo[_] => (this eq that) || (a == that.a && s == that.s && t == that.t && i == that.i)
+    case _            => false
   }
 
   @throws[java.io.IOException]
