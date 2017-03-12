@@ -121,4 +121,23 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with Generat
     foo.toJson.compactPrint should equal("""{"a":true,"b":false,"s":"world"}""")
   }
 
+  it should "not allow null or Some(null) parameters for optimised fields" in {
+
+    intercept[NullPointerException] {
+      Foo(null, Option(true), Option("hello"))
+    }
+
+    intercept[NullPointerException] {
+      Foo(Option(true), null, Option("hello"))
+    }
+
+    intercept[NullPointerException] {
+      Foo(Option(true), Option(true), null)
+    }
+
+    intercept[NullPointerException] {
+      Foo(Option(true), Option(true), Some(null))
+    }
+
+  }
 }
