@@ -59,6 +59,11 @@ final object Foo {
   override def toString = "Foo"
 
   // incase somebody serialises the companion (it happens!)
+  @throws[java.io.IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
+  @throws[java.io.IOException]
+  @throws[ClassNotFoundException]
+  private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
   private[this] def readResolve(raw: Foo.type): Foo.type = Foo
 
   // note, default value on `i`
