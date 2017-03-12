@@ -104,7 +104,7 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution {
     import spray.json._
     import fommil.sjs.FamilyFormats._
 
-    implicit val J: JsonFormat[Foo] = cachedImplicit
+    foo.toJson.compactPrint should equal("""{"a":true,"b":false,"s":"world"}""")
   }
 
 }

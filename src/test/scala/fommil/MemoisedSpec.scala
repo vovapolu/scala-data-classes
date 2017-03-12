@@ -90,7 +90,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
     T.cast(foo).value should be theSameInstanceAs (foo)
   }
 
-  it should "allow user-land Show (Generic) derivation" in {
+  it should "allow user-land Semigroup (Generic) derivation" in {
     import cats.Semigroup
     import cats.implicits._
     import cats.derived.semigroup._
@@ -110,7 +110,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
     import spray.json._
     import fommil.sjs.FamilyFormats._
 
-    implicit val J: JsonFormat[Foo] = cachedImplicit
+    foo.toJson.compactPrint should equal("""{"a":true,"s":"hello"}""")
   }
 
   it should "have memoised string fields" in {

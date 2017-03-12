@@ -103,7 +103,7 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
     T.cast(Foo(true, "hello", 1L, 1)).value shouldBe Foo(true, "hello", 1L, 1)
   }
 
-  it should "allow user-land Show (Generic) derivation" in {
+  it should "allow user-land Semigroup (Generic) derivation" in {
     import cats.Semigroup
     import cats.implicits._
     import cats.derived.semigroup._
@@ -118,12 +118,11 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
     S.combine(foo, foo) should equal(Foo(true, "hellohello", "worldworld", 2))
   }
 
-  // redundant, just using it becuase I am familiar with the required imports
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {
     import spray.json._
     import fommil.sjs.FamilyFormats._
 
-    implicit val J: JsonFormat[Foo[String]] = cachedImplicit
+    foo.toJson.compactPrint should equal("""{"a":true,"s":"hello","t":"world","i":1}""")
   }
 
 }
