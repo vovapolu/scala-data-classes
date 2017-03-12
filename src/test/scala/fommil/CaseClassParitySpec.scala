@@ -60,6 +60,8 @@ class CaseClassParitySpec extends FlatSpec {
   }
 
   it should "be serialisable" in {
+    // should really check with the serialised form of the equivalent case class
+
     val bytes_out = new ByteArrayOutputStream
     val out = new ObjectOutputStream(bytes_out)
 

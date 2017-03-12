@@ -5,10 +5,10 @@ package testing.caseclass
 // @data(product = true, checkSerializable = false)
 // class Foo[+T](a: Boolean, s: String, t: T, i: Int = 0)
 final class Foo[+T] private (
-  private[this] val _a: Boolean,
-  private[this] val _s: String,
-  private[this] val _t: T,
-  private[this] val _i: Int
+  private[this] var _a: Boolean,
+  private[this] var _s: String,
+  private[this] var _t: T,
+  private[this] var _i: Int
 ) extends Serializable with Product {
   def a: Boolean = _a
   def s: String = _s
@@ -34,7 +34,22 @@ final class Foo[+T] private (
     case _         => false
   }
 
-  // should go via the companion to force whatever logic we put there
+  @throws[java.io.IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.writeBoolean(a)
+    out.writeUTF(s)
+    out.writeObject(t) // NOTE: not checking Serializable
+    out.writeInt(i)
+  }
+  @throws[java.io.IOException]
+  @throws[ClassNotFoundException]
+  private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+    _a = in.readBoolean()
+    _s = in.readUTF()
+    _t = in.readObject().asInstanceOf[T]
+    _i = in.readInt
+  }
+  // readObjectNoData not needed because class is final
   private[this] def readResolve(): Foo[T] = Foo(a, s, t, i)
 
 }
