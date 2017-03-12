@@ -11,7 +11,7 @@ import testing.memoised._
 import shapeless._
 
 // intentionally parallel to try and flush out concurrency issues
-class MemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
+class MemoisedSpec extends FlatSpec with ParallelTestExecution {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()
   val log = LoggerFactory.getLogger(this.getClass)
@@ -23,7 +23,7 @@ class MemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
     foo should equal(foo)
     foo should be theSameInstanceAs (Foo(true, "hello"))
     foo should not equal (Foo(false, "hello"))
-    foo.toString should equal("Foo(true,hello)")
+    foo.toString should be theSameInstanceAs foo.toString // memoiseToString
     Foo.toString should equal("Foo")
   }
 
@@ -39,8 +39,8 @@ class MemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
   }
 
   it should "have a copy method" in {
-    foo.copy(a = false) should equal(Foo(false, "hello"))
-    foo.copy(s = "foo") should equal(Foo(true, "foo"))
+    foo.copy(a = false) should be theSameInstanceAs (Foo(false, "hello"))
+    foo.copy(s = "foo") should be theSameInstanceAs (Foo(true, "foo"))
   }
 
   it should "have a pattern matcher" in {
@@ -102,7 +102,7 @@ class MemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
 
     implicit val S: Semigroup[Foo] = cachedImplicit
 
-    S.combine(foo, foo) should equal(Foo(true, "hellohello"))
+    S.combine(foo, foo) should be theSameInstanceAs (Foo(true, "hellohello"))
   }
 
   // redundant, just using it becuase I am familiar with the required imports
@@ -114,6 +114,8 @@ class MemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
   }
 
   it should "have memoised string fields" in {
-    Foo(true, "stringy").s should be theSameInstanceAs (Foo(false, "stringy").s)
+    // constructing the String on the heap, so the compiler doesn't intern
+    // we can't guarantee this if memoiseStrong=false (unless using string interning)
+    Foo(true, 13.toString).s should be theSameInstanceAs (Foo(false, 13.toString).s)
   }
 }

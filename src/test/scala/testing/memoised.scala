@@ -1,6 +1,14 @@
 package testing.memoised
 
-// @data(memoise = true, memoiseStrings = true, memoiseHashCode = true, memoiseToString = true)
+// @data(
+//   memoise = true,
+//   memoiseRefs = Seq('s),
+//   memoiseHashCode = true,
+//   memoiseToString = true,
+//   memoiseStrong = true,
+//   memoiseStringsIntern = false,
+//   companionExtends = true
+// )
 // class Foo(a: Boolean, s: String)
 final class Foo private (
   private[this] var _a: Boolean,
@@ -12,21 +20,20 @@ final class Foo private (
 
   def copy(a: Boolean = a, s: String = s): Foo = Foo(a, s)
 
+  // allows the user to re-memoise if the Interner was flushed. Only
+  // generated if memoise = true & memoiseStrong = false. Called
+  // .intern because there is precedent with String.intern
+  def intern: Foo = Foo(a, s)
+
   override val toString: String = s"Foo($a,$s)"
   override val hashCode: Int = a.hashCode + 13 * s.hashCode
-  override def equals(o: Any): Boolean = o match {
-    //case null                      => false
-    case that: Foo if this eq that => true // because of memoisation!
 
-    // can't seem to get guarantees out of the JVM, so need a fallback check
-    // case that: Foo if hashCode == that.hashCode => a == that.a && s == that.s
-
-    // DEBUGGING
-    case that: Foo if a == that.a && s == that.s =>
-      throw new IllegalStateException(s"broken memoisation")
-
-    case _ => false
-  }
+  // // not added if memoiseStrong=true. hashCode shortcut only added if memoiseHashCode=true
+  // override def equals(o: Any): Boolean = o match {
+  //   case that: Foo if this eq that              => true
+  //   case that: Foo if hashCode == that.hashCode => a == that.a && s == that.s
+  //   case _                                      => false
+  // }
 
   @throws[java.io.IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
@@ -36,7 +43,6 @@ final class Foo private (
   @throws[java.io.IOException]
   @throws[ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
-    // these will be memoised by readResolve
     _a = in.readBoolean()
     _s = in.readUTF()
   }
@@ -45,7 +51,8 @@ final class Foo private (
 
 }
 
-final object Foo extends ((Boolean, String) => Foo) {
+// companionExtends = true
+final object Foo extends ((Boolean, String) => Foo) with Serializable {
   override def toString = "Foo"
 
   // incase somebody serialises the companion (it happens!)
@@ -57,32 +64,23 @@ final object Foo extends ((Boolean, String) => Foo) {
   @throws[java.io.ObjectStreamException]
   private[this] def readResolve(raw: Foo.type): Any = Foo
 
-  // What we really want is a non-blocking SoftHashSet[Foo] that takes
-  // a custom Equality and *guarantees* that something will never be
-  // removed if it is strongly referenced elsewhere. WeakHashMap
-  // aggressively cleans key references, even if they are strongly
-  // referenced, Guava's Cache uses identity equality on the keys and
-  // Interner uses instance equality (which in our case is identity
-  // equality). To use Interner we have to wrap our objects in
-  // something with value equality (plus we're not sure what the GC
-  // semantics are).
+  // this wrapper is only needed when memoiseStrong=true (to force value equality)
   private class FooWithValueEquality(val f: Foo) {
     override def toString: String = f.toString
     override def hashCode: Int = f.hashCode
     override def equals(o: Any): Boolean = o match {
-      case that: FooWithValueEquality => f.a == that.f.a && f.s == that.f.s
-      case _                          => false
+      // only use the hashCode shortcut if memoiseHashCode=true
+      case that: FooWithValueEquality if hashCode == that.hashCode => f.a == that.f.a && f.s == that.f.s
+      case _ => false
     }
   }
 
+  // memoiseStrong = true, so use a StrongInterner. Shame there is no SoftInterner
   private[this] val memoised_cache = com.google.common.collect.Interners.newStrongInterner[FooWithValueEquality]()
-
-  // this is an alternative to String.intern, which uses a global cache
-  // (we might want to make memoizeStringsIntern an option, sometimes useful)
-  private[this] val memoisedStrings_cache = com.google.common.collect.Interners.newStrongInterner[String]()
-
+  private[this] val memoisedRef_cache = com.google.common.collect.Interners.newStrongInterner[AnyRef]()
   def apply(a: Boolean, s: String): Foo = {
-    val s_memoised = memoisedStrings_cache.intern(s)
+    // special case available for String.intern with memoizeStringsIntern=true
+    val s_memoised = memoisedRef_cache.intern(s).asInstanceOf[String]
     val created = new Foo(a, s_memoised)
     val safe = created.synchronized(created) // safe publish vars
     memoised_cache.intern(new FooWithValueEquality(safe)).f

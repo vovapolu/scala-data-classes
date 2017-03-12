@@ -19,7 +19,9 @@ should give feature parity with
 final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)
 ```
 
-User-defined methods and fields are being debated in [#5](https://github.com/fommil/scala-data-classes/issues/5)
+Extending `trait` / `interface` is allowed, but extending `class` / `abstract class` is forbidden.
+
+User-defined methods and fields are being debated in [#5](https://github.com/fommil/scala-data-classes/issues/5).
 
 - `product` (i.e. implementing `Product`) will be disabled by default because it encourages runtime inspection instead of compiletime safety.
 - `checkSerializable` (i.e. checking all parameters for `Serializable`) will be enabled by default because this is the sort of thing that should be checked at compiletime.
@@ -29,6 +31,10 @@ Implicit instances of `shapeless.{Generic, LabelledGeneric, Typeable}` are gener
 
 ## Memoisation
 
+Memoisation uses best endeavours to re-use existing instances instead of creating new ones.
+
+High levels of memoisation in a JVM mean that the overall heap size for a `class` can be **dramatically** reduced in some cases, but at the cost of extra CPU cycles during construction and GC pressure. Also, the incidence of instance-based equality hits go up (so `equals` can get faster!).
+
 ```scala
 @data(memoise = true, memoiseStrings = true, memoiseHashCode = true, memoiseToString = true)
 class Foo(a: Boolean, s: String)
@@ -36,12 +42,27 @@ class Foo(a: Boolean, s: String)
 
 The following features are independent, but can be combined:
 
-- `memoise` uses a weak reference cache such that reference and value equality are equivalent (at the cost of GC pressure)
-- `memoiseStrings` uses a weak reference cache for `String` fields (at the cost of GC pressure)
-- `memoiseHashCode` stores the `hashCode` in a `val` (at the cost of heap)
-- `memoiseToString` stores the `toString` in a `val` (at the cost of heap)
+- `memoise` uses an interner cache to reduce duplication on the heap (at the cost of lookup and GC pressure)
+- `memoiseRefs` (takes `Seq[Symbol]`) uses a memoisation cache for the selected `AnyRef` fields (at the cost of lookup and GC pressure)
+- `memoizeStringsIntern` special-cases `String` fields to use the JVM's `intern`
+- `memoiseHashCode` stores the `hashCode` in a `val`, and uses this as a shortcut in `equals` (at the cost of initialisation and heap)
+- `memoiseToString` stores the `toString` in a `val` (at the cost of initialisation and heap)
+- `memoiseStrong` weak by default, means your instances are never garbage collected and `equals` is identity based (extreme caution!)
 
 Further ideas for memoisation should go in [#6](https://github.com/fommil/scala-data-classes/issues/6)
+
+### Implementation Note
+
+The JVM does not enable a cache that allows its contents to be garbage collected when no longer referenced by anywhere else in the system:
+
+1. the user could be using weak / soft references.
+2. experiments showed that `WeakHashMap` is aggressively cleaned even when its keys are strongly referenced elsewhere. This may be a general problem with `WeakReference` and `SoftReference` (the latter to a lesser extend, but still without guarantees).
+
+Therefore, value and identity equivalence can only be guaranteed if a strong reference cache is used, or if the JVM ever offers native support.
+
+See [#8](https://github.com/fommil/scala-data-classes/issues/8) for a way of speeding up `equals` for instances with value equality (but not reference equality), at the cost of even more heap.
+
+We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we really want is a `SoftReference` interner that uses a custom `Equality`.
 
 ## Optimise Heap
 

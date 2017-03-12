@@ -39,7 +39,7 @@ final class Foo private (
 
 }
 
-final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => Foo) {
+final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => Foo) with Serializable {
   override def toString = "Foo"
 
   @throws[java.io.ObjectStreamException]

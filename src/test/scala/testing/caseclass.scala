@@ -56,7 +56,7 @@ final class Foo[+T] private (
 }
 
 // companionExtends would try to add `extends ((...) => Foo)` for non-parametric classes
-final object Foo {
+final object Foo extends Serializable {
   override def toString = "Foo"
 
   // incase somebody serialises the companion (it happens!)
