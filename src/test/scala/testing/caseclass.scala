@@ -50,7 +50,8 @@ final class Foo[+T] private (
     _i = in.readInt
   }
   // readObjectNoData not needed because class is final
-  private[this] def readResolve(): Foo[T] = Foo(a, s, t, i)
+  @throws[java.io.ObjectStreamException]
+  private[this] def readResolve(): Any = Foo(a, s, t, i)
 
 }
 
@@ -64,7 +65,8 @@ final object Foo {
   @throws[java.io.IOException]
   @throws[ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
-  private[this] def readResolve(raw: Foo.type): Foo.type = Foo
+  @throws[java.io.ObjectStreamException]
+  private[this] def readResolve(raw: Foo.type): Any = Foo
 
   // note, default value on `i`
   def apply[T](a: Boolean, s: String, t: T, i: Int = 0): Foo[T] = {

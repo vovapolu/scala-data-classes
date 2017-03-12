@@ -34,14 +34,16 @@ final class Foo private (
   override def hashCode: Int = ???
   override def equals(o: Any): Boolean = ??? // NOTE can't use eq for _s when optimiseHeapString is used
 
-  private[this] def readResolve: Foo = Foo(a, b, s)
+  @throws[java.io.ObjectStreamException]
+  private[this] def readResolve: Any = Foo(a, b, s)
 
 }
 
 final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => Foo) {
   override def toString = "Foo"
 
-  private[this] def readResolve(raw: Foo.type): Foo.type = Foo
+  @throws[java.io.ObjectStreamException]
+  private[this] def readResolve(raw: Foo.type): Any = Foo
 
   def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Foo = ???
   def unapply(f: Foo): Option[(Option[Boolean], Option[Boolean], Option[String])] = ???
