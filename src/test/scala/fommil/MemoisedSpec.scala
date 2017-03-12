@@ -5,16 +5,11 @@ import java.io._
 import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
-import org.slf4j.LoggerFactory
-import org.slf4j.bridge.SLF4JBridgeHandler
 import testing.memoised._
 import shapeless._
 
 // intentionally parallel to try and flush out concurrency issues
 class MemoisedSpec extends FlatSpec with ParallelTestExecution {
-  SLF4JBridgeHandler.removeHandlersForRootLogger()
-  SLF4JBridgeHandler.install()
-  val log = LoggerFactory.getLogger(this.getClass)
 
   val foo = Foo(true, "hello")
 

@@ -5,11 +5,16 @@ import java.io._
 import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalactic.anyvals.PosInt
 import testing.optimiseheap._
 import shapeless._
 
-class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution {
+class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with GeneratorDrivenPropertyChecks {
   val foo = Foo(Option(true), Option(false), Option("world"))
+
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    PropertyCheckConfiguration(minSuccessful = PosInt(100))
 
   "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
     foo.hashCode shouldBe 626589729
@@ -30,6 +35,15 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution {
     foo.a.value should equal(true)
     foo.b.value should equal(false)
     foo.s.value should equal("world")
+  }
+
+  it should "correctly return a wide range parameters as fields" in {
+    forAll { (a: Option[Boolean], b: Option[Boolean], s: Option[String]) =>
+      val f = Foo(a, b, s)
+      f.a should equal(a)
+      f.b should equal(b)
+      f.s should equal(s)
+    }
   }
 
   it should "have a copy method" in {
