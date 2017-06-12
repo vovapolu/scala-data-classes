@@ -6,6 +6,7 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
 import testing.caseclass._
+import testing.meta._
 import shapeless._
 
 class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
@@ -14,9 +15,10 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
   // final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)
 
   val foo = Foo(true, "hello", "world", 1)
+  val metaFoo = FooMetaCaseClass(true, "hello", "world", 1)
 
   "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
-    foo.hashCode shouldBe -1034845328
+    foo.hashCode shouldBe metaFoo.hashCode
     foo should equal(foo)
     foo should not be theSameInstanceAs(Foo(true, "hello", "world", 1))
     foo should not equal (Foo(false, "hello", "world", 1))
