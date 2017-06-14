@@ -21,7 +21,8 @@ libraryDependencies ++= Seq(
  "org.typelevel" %% "kittens" % "1.0.0-M9" % "test",
  "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.4" % "test",
  "com.github.fommil" %% "spray-json-shapeless" % "1.3.0" % "test",
- "org.scalameta" %% "scalameta" % "1.8.0" % Provided
+ "org.scalameta" %% "scalameta" % "1.8.0" % Provided,
+ "org.scalameta" %% "testkit" % "1.8.0"
 ) ++ shapeless.value.map(_ % "test")
 
 macroAnnotationSettings

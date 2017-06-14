@@ -217,7 +217,7 @@ object DataMacro {
   //    }
   //  }
 
-  private [dataMacro] def validateUsedNames(names: Seq[String], dataMods: DataMods) = {
+  private[dataMacro] def validateUsedNames(names: Seq[String], dataMods: DataMods) = {
     val methodAbort = (method: String) => abort(s"""Data class shouldn't contain "$method" method""")
     names.foreach {
       case "apply" => methodAbort("apply")
@@ -234,33 +234,11 @@ object DataMacro {
         abort(s"""Data class shouldn't contain "equals" method with modificators""")
     }
   }
-}
 
-class data(product: Boolean = false,
-           checkSerializable: Boolean = false,
-           intern: Boolean = false,
-           idEquals: Boolean = false) extends scala.annotation.StaticAnnotation {
-
-  inline def apply(defn: Any): Any = meta {
-    //println(this.structure)
-    var intern: Boolean = false
-    var idEquals: Boolean = false
-    this match {
-      case q"new data(..$args)" => args.foreach {
-        case arg"intern = ${Lit(b: Boolean)}" => intern = b
-        case arg"idEquals = ${Lit(b: Boolean)}" => idEquals = b
-        case _ =>
-      }
-      case _ =>
-    }
-
-    if (intern && idEquals) {
-      abort("Can't do interning with id equations")
-    }
-
-    defn match {
-      case Term.Block(Seq(cls@Defn.Class(Seq(), name, Seq(), ctor, tmpl), companion: Defn.Object)) =>
-        abort("@data block")
+  def expand(clazz: Defn.Class,
+             intern: Boolean = false,
+             idEquals: Boolean = false): Term.Block = {
+    clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
         tmpl.stats
         val dataParams = DataMacro.extractDataParams(ctor)
@@ -290,6 +268,36 @@ class data(product: Boolean = false,
         ))
       case _ =>
         abort("@data must annotate a class without mods.")
+    }
+  }
+}
+
+class data(product: Boolean = false,
+           checkSerializable: Boolean = false,
+           intern: Boolean = false,
+           idEquals: Boolean = false) extends scala.annotation.StaticAnnotation {
+
+  inline def apply(defn: Any): Any = meta {
+    //println(this.structure)
+    var intern: Boolean = false
+    var idEquals: Boolean = false
+    this match {
+      case q"new data(..$args)" => args.foreach {
+        case arg"intern = ${Lit(b: Boolean)}" => intern = b
+        case arg"idEquals = ${Lit(b: Boolean)}" => idEquals = b
+        case _ =>
+      }
+      case _ =>
+    }
+
+    if (intern && idEquals) {
+      abort("Can't do interning with id equations")
+    }
+
+    defn match {
+      case Term.Block(Seq(cls@Defn.Class(Seq(), name, Seq(), ctor, tmpl), companion: Defn.Object)) =>
+        abort("@data block")
+      case clazz: Defn.Class => DataMacro.expand(clazz, intern, idEquals)
     }
   }
 }
