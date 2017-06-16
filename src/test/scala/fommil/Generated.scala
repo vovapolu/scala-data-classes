@@ -22,8 +22,8 @@ class Generated extends FlatSpec with ParallelTestExecution {
     }
   }
 
-  "@data-generated class" should "have case-class methods" in {
-    val source = io.Source.fromURL(getClass.getResource("/generatedTests/CaseClassParityGen.scala")).mkString
+  def checkGenFile(filename: String) = {
+    val source = io.Source.fromURL(getClass.getResource(s"/generatedTests/$filename.scala")).mkString
     source.split("---") match {
       case Array(input, target) =>
         val inputTree = input.parse[Stat].get match {
@@ -34,5 +34,10 @@ class Generated extends FlatSpec with ParallelTestExecution {
         assertStructurallyEqual(DataMacro.expand(inputTree), targetTree)
       case _ => fail("Source has two or more delimiters \"---\"")
     }
+  }
+
+  "@data-generated class" should "have case-class methods" in {
+    checkGenFile("CaseClassParityGen")
+    checkGenFile("CaseClassTypedParityGen")
   }
 }

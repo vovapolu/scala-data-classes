@@ -1,13 +1,14 @@
 package fommil.dataMacro
 
-import fommil.dataMacro.DataMacro.DataMods
+import fommil.dataMacro.DataStat.DataStatBuilder
 
 import scala.collection.immutable.Seq
 import scala.meta._
+import scala.meta.internal.ast.Fresh
 
 object DataMacro {
-  private[dataMacro] case class DataParam(name: String, tpe: Type, default: Option[Term])
-  private[dataMacro] case class DataMods(intern: Boolean, idEquals: Boolean)
+
+  import DataInfo._
 
   private[dataMacro] def validateCtor(ctor: Ctor.Primary) = {
     if (ctor.paramss.length > 1) {
@@ -19,62 +20,27 @@ object DataMacro {
     }
   }
 
-  private[dataMacro] def extractDataParams(ctor: Ctor.Primary): Seq[DataParam] = {
+  private[dataMacro] def extractDataInfo(name: Type.Name,
+                                         ctor: Ctor.Primary,
+                                         tparams: Seq[Type.Param],
+                                         dataMods: DataMods): DataInfo = {
     validateCtor(ctor)
-    ctor.paramss.flatten.map {
-      case Term.Param(_, name, Some(tpe: Type), default) => DataParam(name.value, tpe, default)
-      case _ => abort("Invalid constructor!")
-    }
+    DataInfo(name, ctor.paramss.flatten, tparams, dataMods)
   }
 
-  private[dataMacro] def buildCtorParams(dataParams: Seq[DataParam]): Seq[Term.Param] = {
-    dataParams.map(
-      param => Term.Param(Seq(Mod.ValParam()), Term.Name(param.name), Some(param.tpe), param.default))
-  }
+  private[dataMacro] def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
+    val ctorParams = dataInfo.classParams.map(param =>
+      param"private[this] var ${Term.Name("_" + param.name.value)}: ${param.decltpe.get}")
+    // maybe it will be necessary to create unique names instead of prefix with "_"
 
-  private[dataMacro] def extractSimpleTypeParams(tparams: Seq[Type.Param]): Seq[Type.Param] = {
-    tparams.map(tparam => tparam.copy(mods = Seq(), tbounds = Type.Bounds(None, None)))
-  }
-
-  private[dataMacro] def buildApply(name: Type.Name,
-                                    dataParams: Seq[DataParam],
-                                    tparams: Seq[Type.Param],
-                                    intern: Boolean): Defn.Def = {
-    val args = dataParams.map(param => Term.Name(param.name))
-    val params = dataParams.map(param => param"${Term.Name(param.name)}: ${param.tpe}")
-    val simpleTparams = extractSimpleTypeParams(tparams)
-    val tparamsNames = simpleTparams.map(param => Type.Name(param.name.value))
-    val classType = if (tparamsNames.nonEmpty) t"$name[..$tparamsNames]" else t"$name"
-    if (intern) {
-      q"""def apply[..$simpleTparams](..$params): $classType = {
-          val newVal = new ${Ctor.Ref.Name(name.value)}(..$args)
-          ${Term.Name(name.value)}.intern(newVal)
-        }"""
-    } else {
-      q"""def apply[..$simpleTparams](..$params): $classType =
-        new ${Ctor.Ref.Name(name.value)}(..$args)"""
-    }
+    q"""final class ${dataInfo.name}[..${dataInfo.simpleTypeParams}] private (..$ctorParams)
+                         extends Product with Serializable {
+       ..${builders.flatMap(_.classStats(dataInfo))}
+    }"""
   }
 
   private[dataMacro] def buildUnapply(name: Type.Name,
-                                      dataParams: Seq[DataParam],
-                                      tparams: Seq[Type.Param]): Defn.Def = {
-    val clFields = dataParams.map(param => q"that.${Term.Name(param.name)}")
-    val simpleTparams = extractSimpleTypeParams(tparams)
-    val tparamsNames = simpleTparams.map(param => Type.Name(param.name.value))
-    val classType = if (tparamsNames.nonEmpty) t"$name[..$tparamsNames]" else t"$name"
 
-    val tupleTypes = if (dataParams.length > 1) {
-      t"(..${dataParams.map(_.tpe)})"
-    } else {
-      t"${dataParams.head.tpe}"
-    }
-    val tupleArgs = if (clFields.length > 1) {
-      q"(..$clFields)"
-    } else {
-      clFields.head
-    }
-    q"def unapply[..$simpleTparams](that: $classType): Option[$tupleTypes] = Some($tupleArgs)"
   }
 
   private[dataMacro] def buildEquals(name: Type.Name,
@@ -243,7 +209,8 @@ object DataMacro {
         tmpl.stats
         val dataParams = DataMacro.extractDataParams(ctor)
         val simpleTparams = DataMacro.extractSimpleTypeParams(tparams)
-        val newClass: Stat = q"""class ${Type.Name(name.value)}[..$simpleTparams] (..${DataMacro.buildCtorParams(dataParams)})
+        val newClass: Stat = q"""final class ${Type.Name(name.value)}[..$simpleTparams]
+                          (..${DataMacro.buildCtorParams(dataParams)})
                          extends Product with Serializable {
           ${DataMacro.buildEquals(name, dataParams, DataMods(intern, idEquals), tparams)}
           ${DataMacro.buildToString(name, dataParams)}
