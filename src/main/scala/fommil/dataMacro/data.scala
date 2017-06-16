@@ -1,14 +1,12 @@
 package fommil.dataMacro
 
-import fommil.dataMacro.DataStat.DataStatBuilder
-
 import scala.collection.immutable.Seq
 import scala.meta._
-import scala.meta.internal.ast.Fresh
 
 object DataMacro {
 
   import DataInfo._
+  import DataStat._
 
   private[dataMacro] def validateCtor(ctor: Ctor.Primary) = {
     if (ctor.paramss.length > 1) {
@@ -39,131 +37,10 @@ object DataMacro {
     }"""
   }
 
-  private[dataMacro] def buildUnapply(name: Type.Name,
-
-  }
-
-  private[dataMacro] def buildEquals(name: Type.Name,
-                                     dataParams: Seq[DataParam],
-                                     mods: DataMods,
-                                     tparams: Seq[Type.Param]): Defn.Def = {
-    val eqs = dataParams.map(param => q"that.${Term.Name(param.name)} == this.${Term.Name(param.name)}")
-    val eqsWithAnds = eqs match {
-      case Seq(eq1) => eq1
-      case Seq(eq1, rest @ _ *) => rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
-    }
-
-    val simpleTparams = extractSimpleTypeParams(tparams)
-    val tparamsNames = simpleTparams.map(param => Type.Name(param.name.value))
-    val classType = if (tparamsNames.nonEmpty) pt"$name[..$tparamsNames]" else pt"$name"
-
-    if (mods.intern) {
-      q"override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object])"
-    } else if (mods.idEquals) {
-      q"""override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) ||
-      (thatAny match {
-        case that: $classType =>
-          val idTuple = if (this.id > that.id) (that.id, this.id) else (this.id, that.id)
-          val res = ${Term.Name(name.value)}.idEquals.get(idTuple)
-          if (res == null) {
-            val realEquals = $eqsWithAnds
-            ${Term.Name(name.value)}.idEquals.put(idTuple, Boolean.box(realEquals))
-            realEquals
-          } else {
-            Boolean.unbox(res)
-          }
-        case _ => false
-     })"""
-    } else {
-      q"""override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) ||
-      (thatAny match {
-        case that: $classType => $eqsWithAnds
-        case _ => false
-     })"""
-    }
-  }
-
-  private[dataMacro] def buildProductMethods(name: Type.Name,
-                                             dataParams: Seq[DataParam],
-                                             tparams: Seq[Type.Param]): Seq[Defn.Def] = {
-    val casesForElements = dataParams.zipWithIndex.map {
-      case (param, i) => p"case ${Lit.Int(i)} => this.${Term.Name(param.name)}"
-    }
-    val simpleTparams = extractSimpleTypeParams(tparams)
-    val tparamsNames = simpleTparams.map(param => Type.Name(param.name.value))
-    val classType = if (tparamsNames.nonEmpty) t"$name[..$tparamsNames]" else t"$name"
-    Seq(
-      q"def canEqual(that: Any): Boolean = that.isInstanceOf[$classType]",
-      q"def productArity: Int = ${Lit.Int(dataParams.length)}",
-      q"""def productElement(n: Int): Any =
-         n match {
-            ..case $casesForElements
-            case _ => throw new IndexOutOfBoundsException(n.toString())
-         }
-       """,
-      q"override def productPrefix: String = ${Lit.String(name.value)}",
-      q"override def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](this)"
-    )
-  }
-
-  private[dataMacro] def buildHashCode(name: Type.Name, dataParams: Seq[DataParam]): Defn.Def = {
-    q"override def hashCode(): Int = scala.runtime.ScalaRunTime._hashCode(this)"
-  }
-
-  private[dataMacro] def buildToString(name: Type.Name, dataParams: Seq[DataParam]): Defn.Def = {
-    q"override def toString(): String = scala.runtime.ScalaRunTime._toString(this)"
-  }
-
-  private[dataMacro] def buildCopy(name: Type.Name,
-                                   dataParams: Seq[DataParam],
-                                   tparams: Seq[Type.Param]): Defn.Def = {
-    val copyParams = dataParams.map(
-      param => Term.Param(Seq(), Term.Name(param.name), Some(param.tpe), Some(q"this.${Term.Name(param.name)}")))
-    val copyArgs = dataParams.map(param => Term.Name(param.name))
-    val simpleTparams = extractSimpleTypeParams(tparams)
-    val tparamsNames = simpleTparams.map(param => Type.Name(param.name.value))
-    val classType = if (tparamsNames.nonEmpty) t"$name[..$tparamsNames]" else t"$name"
-    q"def copy(..$copyParams): $classType = new ${Ctor.Ref.Name(name.value)}(..$copyArgs)"
-  }
-
-  private[dataMacro] def buildInternMap(name: Type.Name, dataParams: Seq[DataParam]): Seq[Stat] = {
-    val wrapperName = Type.Name(name.value + "Wrapper")
-    val eqs = dataParams.map(param => q"that.cl.${Term.Name(param.name)} == this.cl.${Term.Name(param.name)}")
-    val eqsWithAnds = eqs match {
-      case Seq(eq1) => eq1
-      case Seq(eq1, rest @ _ *) => rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
-    }
-    Seq(
-      q"""private[$name] class $wrapperName (val cl: $name) {
-          override def hashCode(): Int = cl.hashCode
-          override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) ||
-            (thatAny match {
-              case that: $wrapperName => $eqsWithAnds
-              case _ => false
-            })
-       }""",
-      q"""private[$name] val internMap: java.util.concurrent.ConcurrentHashMap[$wrapperName, $name] =
-         new java.util.concurrent.ConcurrentHashMap()""",
-      q"""def intern(cl: $name): $name = {
-          val res = internMap.putIfAbsent(new ${Ctor.Ref.Name(wrapperName.value)}(cl), cl)
-          if (res == null) cl else res
-      }"""
-    )
-  }
-
-  private[dataMacro] def buildIntern(name: Type.Name): Defn.Def = {
-    q"def intern: $name = ${Term.Name(name.value)}.intern(this)"
-  }
-
-  private[dataMacro] def buildIdGenerator(name: Type.Name): Seq[Defn.Val] = {
-    Seq(
-      q"private[$name] val idGenerator = new java.util.concurrent.atomic.AtomicInteger()",
-      q"private[$name] val idEquals = new java.util.concurrent.ConcurrentHashMap[(Int, Int), java.lang.Boolean]()"
-    )
-  }
-
-  private[dataMacro] def buildIdVal(name: Type.Name): Defn.Val = {
-    q"private[$name] val id: Int = ${Term.Name(name.value)}.idGenerator.incrementAndGet()"
+  private[dataMacro] def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
+    q"""object ${Term.Name(dataInfo.name.value)} {
+       ..${builders.flatMap(_.objectStats(dataInfo))}
+    }"""
   }
 
   //  private [dataMacro] def getUsedNames(stats: Seq[Stat]): Seq[String] = {
@@ -183,50 +60,40 @@ object DataMacro {
   //    }
   //  }
 
-  private[dataMacro] def validateUsedNames(names: Seq[String], dataMods: DataMods) = {
-    val methodAbort = (method: String) => abort(s"""Data class shouldn't contain "$method" method""")
-    names.foreach {
-      case "apply" => methodAbort("apply")
-      case "unapply" => methodAbort("unapply")
-      case "productArity" => methodAbort("productArity")
-      case "productElement" => methodAbort("productElement")
-      case "productPrefix" => methodAbort("productPrefix")
-      case "productIterator" => methodAbort("productIterator")
-      case "copy" => methodAbort("copy")
-
-      case "equals" if dataMods.idEquals || dataMods.intern =>
-        abort(s"""Data class shouldn't contain "equals" method with modificators""")
-      case "equals" if dataMods.idEquals || dataMods.intern =>
-        abort(s"""Data class shouldn't contain "equals" method with modificators""")
-    }
-  }
+//  private[dataMacro] def validateUsedNames(names: Seq[String], dataMods: DataMods) = {
+//    val methodAbort = (method: String) => abort(s"""Data class shouldn't contain "$method" method""")
+//    names.foreach {
+//      case "apply" => methodAbort("apply")
+//      case "unapply" => methodAbort("unapply")
+//      case "productArity" => methodAbort("productArity")
+//      case "productElement" => methodAbort("productElement")
+//      case "productPrefix" => methodAbort("productPrefix")
+//      case "productIterator" => methodAbort("productIterator")
+//      case "copy" => methodAbort("copy")
+//
+//      case "equals" if dataMods.idEquals || dataMods.intern =>
+//        abort(s"""Data class shouldn't contain "equals" method with modificators""")
+//      case "equals" if dataMods.idEquals || dataMods.intern =>
+//        abort(s"""Data class shouldn't contain "equals" method with modificators""")
+//    }
+//  }
 
   def expand(clazz: Defn.Class,
              intern: Boolean = false,
              idEquals: Boolean = false): Term.Block = {
     clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
-        tmpl.stats
-        val dataParams = DataMacro.extractDataParams(ctor)
-        val simpleTparams = DataMacro.extractSimpleTypeParams(tparams)
-        val newClass: Stat = q"""final class ${Type.Name(name.value)}[..$simpleTparams]
-                          (..${DataMacro.buildCtorParams(dataParams)})
-                         extends Product with Serializable {
-          ${DataMacro.buildEquals(name, dataParams, DataMods(intern, idEquals), tparams)}
-          ${DataMacro.buildToString(name, dataParams)}
-          ${DataMacro.buildHashCode(name, dataParams)}
-          ${DataMacro.buildCopy(name, dataParams, tparams)}
-          ..${DataMacro.buildProductMethods(name, dataParams, tparams)}
-          ..${if (intern) Seq(DataMacro.buildIntern(name)) else Seq()}
-          ..${if (idEquals) Seq(DataMacro.buildIdVal(name)) else Seq()}
-        }"""
-        val newObject: Stat = q"""object ${Term.Name(name.value)} {
-          ${DataMacro.buildApply(name, dataParams, tparams, intern)}
-          ${DataMacro.buildUnapply(name, dataParams, tparams)}
-          ..${if (intern) DataMacro.buildInternMap(name, dataParams) else Seq()}
-          ..${if (idEquals) DataMacro.buildIdGenerator(name) else Seq()}
-        }"""
-
+        val dataInfo = extractDataInfo(name, ctor, tparams, DataMods(intern, idEquals))
+        val builders = Seq(
+          DataApplyBuilder,
+          DataUnapplyBuilder,
+          DataGettersBuilder,
+          DataEqualsBuilder,
+          DataHashCodeToStringBuilder,
+          DataCopyBuilder,
+          DataProductMethodsBuilder)
+        val newClass = buildClass(dataInfo, builders)
+        val newObject = buildObject(dataInfo, builders)
         println((newClass, newObject).toString())
 
         Term.Block(Seq(
