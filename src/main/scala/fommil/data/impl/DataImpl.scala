@@ -1,14 +1,14 @@
-package fommil.dataMacro
+package fommil.data.impl
 
 import scala.collection.immutable.Seq
 import scala.meta._
 
-object DataMacro {
+object DataImpl {
 
   import DataInfo._
   import DataStat._
 
-  private[dataMacro] def validateCtor(ctor: Ctor.Primary) = {
+  def validateCtor(ctor: Ctor.Primary) = {
     if (ctor.paramss.length > 1) {
       abort("Current implementation doesn't support curried class definitions")
     }
@@ -18,7 +18,7 @@ object DataMacro {
     }
   }
 
-  private[dataMacro] def extractDataInfo(name: Type.Name,
+  def extractDataInfo(name: Type.Name,
                                          ctor: Ctor.Primary,
                                          tparams: Seq[Type.Param],
                                          dataMods: DataMods): DataInfo = {
@@ -26,7 +26,7 @@ object DataMacro {
     DataInfo(name, ctor.paramss.flatten, tparams, dataMods)
   }
 
-  private[dataMacro] def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
+  def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
     val ctorParams = dataInfo.classParams.map(param =>
       param"private[this] var ${Term.Name("_" + param.name.value)}: ${param.decltpe.get}")
     // maybe it will be necessary to create unique names instead of prefix with "_"
@@ -37,7 +37,7 @@ object DataMacro {
     }"""
   }
 
-  private[dataMacro] def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
+  def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
     q"""object ${Term.Name(dataInfo.name.value)} {
        ..${builders.flatMap(_.objectStats(dataInfo))}
     }"""
@@ -89,7 +89,11 @@ object DataMacro {
           DataUnapplyBuilder,
           DataGettersBuilder,
           DataEqualsBuilder,
-          DataHashCodeToStringBuilder,
+          DataHashCodeBuilder,
+          DataToStringBuilder,
+          DataWriteObjectBuilder,
+          DataReadObjectBuilder,
+          DataReadResolveBuilder,
           DataCopyBuilder,
           DataProductMethodsBuilder)
         val newClass = buildClass(dataInfo, builders)
@@ -131,7 +135,7 @@ class data(product: Boolean = false,
     defn match {
       case Term.Block(Seq(cls@Defn.Class(Seq(), name, Seq(), ctor, tmpl), companion: Defn.Object)) =>
         abort("@data block")
-      case clazz: Defn.Class => DataMacro.expand(clazz, intern, idEquals)
+      case clazz: Defn.Class => DataImpl.expand(clazz, intern, idEquals)
     }
   }
 }

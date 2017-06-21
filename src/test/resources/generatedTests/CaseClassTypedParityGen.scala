@@ -7,19 +7,35 @@ class A[T](a: Boolean, s: String, t: T)
     def t: T = this._t
 
     override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) || (thatAny match {
-      case that: A[T] =>
+      case that: A[_] =>
         that.a == this.a && that.s == this.s && that.t == this.t
       case _ =>
         false
     })
 
-    override def hashCode(): Int = scala.runtime.ScalaRunTime._hashCode(this)
-    override def toString(): String = scala.runtime.ScalaRunTime._toString(this)
+    override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
+    override def toString(): String = "A" + "(" + a.toString + s.toString + t.toString + ")"
+
+    @throws[java.io.IOException] private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+      out.writeBoolean(a)
+      out.writeUTF(s)
+      out.writeObject(t)
+    }
+
+    @throws[java.io.IOException]
+    @throws[ClassNotFoundException]
+    private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+      _a = in.readBoolean()
+      _s = in.readUTF()
+      _t = in.readObject().asInstanceOf[T]
+    }
+
+    @throws[java.io.ObjectStreamException]
+    private[this] def readResolve(): Any = A(a, s, t)
+
 
     def copy(a: Boolean = this.a, s: String = this.s, t: T = this.t): A[T] = new A(a, s, t)
-
     def canEqual(that: Any): Boolean = that.isInstanceOf[A[T]]
-
     def productArity: Int = 3
     def productElement(n: Int): Any = n match {
       case 0 =>

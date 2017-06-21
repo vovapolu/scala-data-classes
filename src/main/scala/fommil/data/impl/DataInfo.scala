@@ -1,4 +1,4 @@
-package fommil.dataMacro
+package fommil.data.impl
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -18,7 +18,7 @@ object DataInfo {
     )
     lazy val typeParamsNames = simpleTypeParams.map(param => Type.Name(param.name.value))
     lazy val dataType = if (typeParams.nonEmpty) t"$name[..$typeParamsNames]" else t"$name"
-    lazy val dataPatType = if (typeParams.nonEmpty) pt"$name[..$typeParamsNames]" else pt"$name"
+    lazy val dataPatType = if (typeParams.nonEmpty) pt"$name[..${Seq.fill(typeParams.length)(pt"_")}]" else pt"$name"
 
     lazy val classTypes = classParams.map(param => param.decltpe match {
       case Some(tpe: Type) => tpe

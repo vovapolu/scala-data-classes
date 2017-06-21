@@ -28,8 +28,7 @@ final class Foo[+T] private (
   override def canEqual(o: Any): Boolean = o != null && o.isInstanceOf[Foo[_]]
 
   override def toString(): String = s"Foo($a,$s,$t,$i)"
-  override def hashCode(): Int = scala.runtime.ScalaRunTime._hashCode(this) // it's more complicated than simple
-  // a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
+  override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
   override def equals(o: Any): Boolean = o match {
     case that: Foo[_] => (this eq that) || (a == that.a && s == that.s && t == that.t && i == that.i)
     case _            => false

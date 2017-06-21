@@ -1,6 +1,6 @@
-package fommil.dataMacro
+package fommil.data.impl
 
-import fommil.dataMacro.DataInfo.DataInfo
+import fommil.data.impl.DataInfo.DataInfo
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -116,11 +116,25 @@ object DataStat {
     }
   }
 
-  object DataHashCodeToStringBuilder extends DataStatBuilder {
+  object DataHashCodeBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val hashCodeExpr = dataInfo.classParams.dropRight(1)
+        .foldRight[Term](q"${Term.Name(dataInfo.classParams.last.name.value)}.hashCode") {
+          case (param, expr) => q"${Term.Name(param.name.value)}.hashCode + 13 * ($expr)"
+        }
       Seq(
-        q"override def hashCode(): Int = scala.runtime.ScalaRunTime._hashCode(this)",
-        q"override def toString(): String = scala.runtime.ScalaRunTime._toString(this)"
+        q"override def hashCode(): Int = $hashCodeExpr"
+      )
+    }
+  }
+
+  object DataToStringBuilder extends DataStatBuilder {
+    override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val paramsToString = dataInfo.classParams.foldLeft[Term](
+        q"${Lit.String(dataInfo.name.value)} + ${Lit.String("(")}"
+      ) { case (expr, param) => q"$expr + ${Term.Name(param.name.value)}.toString" }
+      Seq(
+        q"override def toString(): String = $paramsToString + ${Lit.String(")")}"
       )
     }
   }
@@ -135,6 +149,76 @@ object DataStat {
       val copyArgs = dataInfo.classParams.map(param => Term.Name(param.name.value))
 
       Seq(q"def copy(..$copyParams): ${dataInfo.dataType} = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$copyArgs)")
+    }
+  }
+
+  object DataWriteObjectBuilder extends DataStatBuilder {
+    override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val writes = dataInfo.classParams.zip(dataInfo.classTypes).map {
+        case (param, tpe) =>
+          q"out.${
+            tpe match {
+              case t"Boolean" => q"writeBoolean"
+              case t"Byte"    => q"writeByte"
+              case t"Short"   => q"writeShort"
+              case t"Char"    => q"writeChar"
+              case t"Int"     => q"writeInt"
+              case t"Long"    => q"writeLong"
+              case t"Float"   => q"writeFloat"
+              case t"Double"  => q"writeDouble"
+              case t"String"  => q"writeUTF"
+              case _          => q"writeObject"
+            }
+          }(${Term.Name(param.name.value)})"
+      }
+      Seq(q"""
+          @throws[java.io.IOException]
+          private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+            ..$writes
+          }
+        """)
+    }
+  }
+
+  object DataReadObjectBuilder extends DataStatBuilder {
+    override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val reads = dataInfo.classParams.zip(dataInfo.classTypes).map {
+        case (param, tpe) =>
+          q"${Term.Name { "_" + param.name.value }} = ${
+            tpe match {
+              case t"Boolean" => q"in.readBoolean()"
+              case t"Byte"    => q"in.readByte()"
+              case t"Short"   => q"in.readShort()"
+              case t"Char"    => q"in.readChar()"
+              case t"Int"     => q"in.readInt()"
+              case t"Long"    => q"in.readLong()"
+              case t"Float"   => q"in.readFloat()"
+              case t"Double"  => q"in.readDouble()"
+              case t"String"  => q"in.readUTF()"
+              case _          => q"in.readObject().asInstanceOf[$tpe]"
+            }
+          }"
+      }
+      Seq(q"""
+        @throws[java.io.IOException]
+        @throws[ClassNotFoundException]
+        private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+          ..$reads
+        }
+        """)
+    }
+  }
+
+  object DataReadResolveBuilder extends DataStatBuilder {
+    override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val args = dataInfo.classParams.map(param => Term.Name(param.name.value))
+
+      Seq(
+        q"""
+            @throws[java.io.ObjectStreamException]
+            private[this] def readResolve(): Any = ${Term.Name(dataInfo.name.value)}(..$args)
+          """
+      )
     }
   }
 

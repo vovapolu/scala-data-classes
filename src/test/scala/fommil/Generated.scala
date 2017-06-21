@@ -1,6 +1,6 @@
 package fommil
 
-import fommil.dataMacro.DataMacro
+import fommil.data.impl.DataImpl
 import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
@@ -31,7 +31,7 @@ class Generated extends FlatSpec with ParallelTestExecution {
           case _                 => fail("Input should be a single class")
         }
         val targetTree = target.parse[Stat].get
-        assertStructurallyEqual(DataMacro.expand(inputTree), targetTree)
+        assertStructurallyEqual(DataImpl.expand(inputTree), targetTree)
       case _ => fail("Source has two or more delimiters \"---\"")
     }
   }

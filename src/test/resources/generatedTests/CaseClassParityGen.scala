@@ -12,11 +12,26 @@ class A(a: Boolean, s: String)
         false
     })
 
-    override def hashCode(): Int = scala.runtime.ScalaRunTime._hashCode(this)
-    override def toString(): String = scala.runtime.ScalaRunTime._toString(this)
+    override def hashCode(): Int = a.hashCode + 13 * s.hashCode
+    override def toString(): String = "A" + "(" + a.toString + s.toString + ")"
+
+    @throws[java.io.IOException]
+    private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+      out.writeBoolean(a)
+      out.writeUTF(s)
+    }
+
+    @throws[java.io.IOException]
+    @throws[ClassNotFoundException]
+    private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+      _a = in.readBoolean()
+      _s = in.readUTF()
+    }
+    @throws[java.io.ObjectStreamException]
+    private[this] def readResolve(): Any = A(a, s)
+
 
     def copy(a: Boolean = this.a, s: String = this.s): A = new A(a, s)
-
     def canEqual(that: Any): Boolean = that.isInstanceOf[A]
 
     def productArity: Int = 2
