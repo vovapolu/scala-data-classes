@@ -1,7 +1,7 @@
-class A(a: Boolean, s: String)
+class A(a: Boolean, s: String = "a")
 ---
 {
-  final class A private (private[this] var _a: Boolean, private[this] var _s: String) extends Product with Serializable {
+  final class A private(private[this] var _a: Boolean, private[this] var _s: String) extends Product with Serializable {
     def a: Boolean = this._a
     def s: String = this._s
 
@@ -13,27 +13,25 @@ class A(a: Boolean, s: String)
     })
 
     override def hashCode(): Int = a.hashCode + 13 * s.hashCode
-    override def toString(): String = "A" + "(" + a.toString + s.toString + ")"
+    override def toString: String = "A(" + (a.toString + "," + s.toString) + ")"
 
-    @throws[java.io.IOException]
+    @throws[_root_.java.io.IOException]
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
       out.writeBoolean(a)
       out.writeUTF(s)
     }
-
-    @throws[java.io.IOException]
-    @throws[ClassNotFoundException]
+    @throws[_root_.java.io.IOException]
+    @throws[_root_.java.lang.ClassNotFoundException]
     private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
       _a = in.readBoolean()
       _s = in.readUTF()
     }
-    @throws[java.io.ObjectStreamException]
+    @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A(a, s)
 
-
     def copy(a: Boolean = this.a, s: String = this.s): A = new A(a, s)
-    def canEqual(that: Any): Boolean = that.isInstanceOf[A]
 
+    def canEqual(that: Any): Boolean = that.isInstanceOf[A]
     def productArity: Int = 2
     def productElement(n: Int): Any = n match {
       case 0 =>
@@ -43,12 +41,48 @@ class A(a: Boolean, s: String)
       case _ =>
         throw new IndexOutOfBoundsException(n.toString())
     }
+
     override def productPrefix: String = "A"
     override def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](this)
   }
 
-  object A {
-    def apply(a: Boolean, s: String): A = new A(a, s)
+  object A extends Serializable {
+    def apply(a: Boolean, s: String = "a"): A = {
+      val newVal = new A(a, s)
+      newVal.synchronized(newVal)
+    }
+
     def unapply(that: A): Option[(Boolean, String)] = Some((that.a, that.s))
+
+    override def toString: String = "A"
+
+    @throws[_root_.java.io.IOException]
+    private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
+
+    @throws[_root_.java.io.IOException]
+    @throws[_root_.java.lang.ClassNotFoundException]
+    private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
+
+    @throws[_root_.java.io.ObjectStreamException]
+    private[this] def readResolve(): Any = A
+
+    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable, TypeCase }
+    import _root_.shapeless.labelled.{ FieldType, field }
+    import _root_.shapeless.syntax.singleton._
+
+    val a_tpe = Symbol("a").narrow
+    val s_tpe = Symbol("s").narrow
+
+    implicit def TypeableA(): Typeable[A] = new Typeable[A] {
+      override def cast(t: Any): Option[A] = {
+        t match {
+          case f @ A(a, s) => Some(A(a, s))
+          case _ => None
+        }
+      }
+      override def describe: String = "A[" + ("Boolean" + "," + "String") + "]"
+    }
+
   }
 }
+

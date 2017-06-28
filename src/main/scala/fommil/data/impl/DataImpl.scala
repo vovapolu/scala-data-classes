@@ -38,7 +38,7 @@ object DataImpl {
   }
 
   def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
-    q"""object ${Term.Name(dataInfo.name.value)} {
+    q"""object ${Term.Name(dataInfo.name.value)} extends Serializable {
        ..${builders.flatMap(_.objectStats(dataInfo))}
     }"""
   }
@@ -95,7 +95,9 @@ object DataImpl {
           DataReadObjectBuilder,
           DataReadResolveBuilder,
           DataCopyBuilder,
-          DataProductMethodsBuilder)
+          DataProductMethodsBuilder,
+          DataShapelessBaseBuilder,
+          DataShapelessTypeableBuilder)
         val newClass = buildClass(dataInfo, builders)
         val newObject = buildObject(dataInfo, builders)
         println((newClass, newObject).toString())

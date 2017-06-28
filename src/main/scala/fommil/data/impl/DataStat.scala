@@ -15,7 +15,12 @@ object DataStat {
   object DataApplyBuilder extends DataStatBuilder {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
       val args = dataInfo.classParams.map(param => Term.Name(param.name.value))
-      val params = dataInfo.classParams.map(param => param"${Term.Name(param.name.value)}: ${param.decltpe.get}")
+      val params = dataInfo.classParams.map(param =>
+        param.default match {
+          case Some(defaultVal) => param"${Term.Name(param.name.value)}: ${param.decltpe.get} = $defaultVal"
+          case None             => param"${Term.Name(param.name.value)}: ${param.decltpe.get}"
+        })
+
       Seq(
         if (dataInfo.dataMods.intern) {
           q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
@@ -23,8 +28,10 @@ object DataStat {
             ${Term.Name(dataInfo.name.value)}.intern(newVal)
           }"""
         } else {
-          q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} =
-            new ${Ctor.Ref.Name(dataInfo.name.value)}(..$args)"""
+          q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
+              val newVal = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$args)
+              newVal.synchronized(newVal)
+            }"""
         }
       )
     }
@@ -75,10 +82,10 @@ object DataStat {
             (thatAny match {
               case that: ${dataInfo.dataPatType} =>
                 val idTuple = if (this.id > that.id) (that.id, this.id) else (this.id, that.id)
-                val res = ${Term.Name(dataInfo.name.value)}.idEquals.get(idTuple)
+                val res = ${dataInfo.termName}.idEquals.get(idTuple)
                 if (res == null) {
                   val realEquals = $eqsWithAnds
-                  ${Term.Name(dataInfo.name.value)}.idEquals.put(idTuple, Boolean.box(realEquals))
+                  ${dataInfo.termName}.idEquals.put(idTuple, Boolean.box(realEquals))
                   realEquals
                 } else {
                   Boolean.unbox(res)
@@ -130,11 +137,19 @@ object DataStat {
 
   object DataToStringBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val paramsToString = dataInfo.classParams.foldLeft[Term](
-        q"${Lit.String(dataInfo.name.value)} + ${Lit.String("(")}"
-      ) { case (expr, param) => q"$expr + ${Term.Name(param.name.value)}.toString" }
+      val paramsToString = dataInfo.classParams.drop(1)
+        .foldLeft[Term](q"${Term.Name(dataInfo.classParams.head.name.value)}.toString") { case (expr, param) => q"$expr + ${Lit.String(",")} + ${Term.Name(param.name.value)}.toString" }
       Seq(
-        q"override def toString(): String = $paramsToString + ${Lit.String(")")}"
+        q"""
+            override def toString: String =
+              ${Lit.String(dataInfo.name.value + "(")} + $paramsToString + ${Lit.String(")")}
+          """
+      )
+    }
+
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
+      Seq(
+        q"override def toString: String = ${Lit.String(dataInfo.name.value)}"
       )
     }
   }
@@ -172,12 +187,18 @@ object DataStat {
           }(${Term.Name(param.name.value)})"
       }
       Seq(q"""
-          @throws[java.io.IOException]
+          @throws[_root_.java.io.IOException]
           private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
             ..$writes
           }
         """)
     }
+
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
+      Seq(q"""
+          @throws[_root_.java.io.IOException]
+          private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
+        """)
   }
 
   object DataReadObjectBuilder extends DataStatBuilder {
@@ -200,25 +221,101 @@ object DataStat {
           }"
       }
       Seq(q"""
-        @throws[java.io.IOException]
-        @throws[ClassNotFoundException]
+        @throws[_root_.java.io.IOException]
+        @throws[_root_.java.lang.ClassNotFoundException]
         private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
           ..$reads
         }
         """)
     }
+
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
+      Seq(q"""
+        @throws[_root_.java.io.IOException]
+        @throws[_root_.java.lang.ClassNotFoundException]
+        private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
+        """)
   }
 
   object DataReadResolveBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
       val args = dataInfo.classParams.map(param => Term.Name(param.name.value))
 
-      Seq(
-        q"""
-            @throws[java.io.ObjectStreamException]
+      Seq(q"""
+            @throws[_root_.java.io.ObjectStreamException]
             private[this] def readResolve(): Any = ${Term.Name(dataInfo.name.value)}(..$args)
-          """
-      )
+          """)
+    }
+
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
+      Seq(q"""
+            @throws[_root_.java.io.ObjectStreamException]
+            private[this] def readResolve(): Any = ${Term.Name(dataInfo.name.value)}
+          """)
+  }
+
+  object DataShapelessBaseBuilder extends DataStatBuilder {
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
+
+      val typeSymbols = dataInfo.classParams.map(param =>
+        q"val ${Pat.Var.Term(Term.Name(param.name.value + "_tpe"))} = Symbol(${Lit.String(param.name.value)}).narrow")
+
+      Seq(
+        q"import _root_.shapeless.{::, HNil, Generic, LabelledGeneric, Typeable, TypeCase}",
+        q"import _root_.shapeless.labelled.{FieldType, field}",
+        q"import _root_.shapeless.syntax.singleton._"
+      ) ++ typeSymbols
+    }
+  }
+
+  object DataShapelessTypeableBuilder extends DataStatBuilder {
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
+      val typeableName = Term.Name("Typeable" + dataInfo.name.value)
+      val implicitTypeables = dataInfo.typeParams.map(tparam =>
+        param"implicit ${Term.Name("T" + tparam.name.value)}: Typeable[${Type.Name(tparam.name.value)}]")
+
+      val typeCases = dataInfo.typeParams.map(tparam =>
+        q"val ${Pat.Var.Term(Term.Name("TC_" + tparam.name.value))} = TypeCase[${Type.Name(tparam.name.value)}]")
+      val dataWithTypeCases = {
+        val args = dataInfo.classParams.zip(dataInfo.classTypeNames).map {
+          case (param, tpe) =>
+            if (dataInfo.typeParams.map(_.name.value).contains(tpe.value)) {
+              p"${Term.Name("TC_" + tpe.value)}(${Pat.Var.Term(Term.Name(param.name.value))})"
+            } else {
+              p"${Pat.Var.Term(Term.Name(param.name.value))}"
+            }
+        }
+        p"${dataInfo.termName}(..$args)"
+      }
+      val dataCreating = q"${dataInfo.termName}(..${dataInfo.classParams.map(param => Term.Name(param.name.value))})"
+
+      val describe = {
+        def getTypeDescribe(tpe: Type.Name): Term =
+          if (dataInfo.typeParams.map(_.name.value).contains(tpe.value)) {
+            q"${Term.Name("T" + tpe.value)}.describe"
+          } else {
+            Lit.String(tpe.value)
+          }
+
+        val targs = dataInfo.classTypeNames.drop(1)
+          .foldLeft[Term](getTypeDescribe(dataInfo.classTypeNames.head)) { case (expr, tpe) => q"$expr + ${Lit.String(",")} + ${getTypeDescribe(tpe)}" }
+        q"${Lit.String(dataInfo.name.value + "[")} + $targs + ${Lit.String("]")}"
+      }
+
+      Seq(q"""
+       implicit def $typeableName[..${dataInfo.simpleTypeParams}]
+        (..$implicitTypeables): Typeable[${dataInfo.dataType}] =
+           new Typeable[${dataInfo.dataType}] {
+             override def cast(t: Any): Option[${dataInfo.dataType}] = {
+               ..$typeCases
+               t match {
+                 case f @ $dataWithTypeCases => Some($dataCreating)
+                 case _                         => None
+               }
+             }
+             override def describe: String = $describe
+           }
+      """)
     }
   }
 
