@@ -1,4 +1,4 @@
-package fommil
+package stalagmite
 
 import scala.annotation.StaticAnnotation
 

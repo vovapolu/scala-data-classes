@@ -1,4 +1,4 @@
-package fommil
+package stalagmite
 
 import java.io._
 
