@@ -1,7 +1,8 @@
+//product serializable shapeless
 class A(a: Boolean, s: String = "a")
----
+//---
 {
-  final class A private(private[this] var _a: Boolean, private[this] var _s: String) extends Product with Serializable {
+  final class A private (private[this] var _a: Boolean, private[this] var _s: String) extends Product with Serializable {
     def a: Boolean = this._a
     def s: String = this._s
 
@@ -14,6 +15,7 @@ class A(a: Boolean, s: String = "a")
 
     override def hashCode(): Int = a.hashCode + 13 * s.hashCode
     override def toString: String = "A(" + (a.toString + "," + s.toString) + ")"
+    def copy(a: Boolean = this.a, s: String = this.s): A = new A(a, s)
 
     @throws[_root_.java.io.IOException]
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
@@ -29,8 +31,6 @@ class A(a: Boolean, s: String = "a")
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A(a, s)
 
-    def copy(a: Boolean = this.a, s: String = this.s): A = new A(a, s)
-
     def canEqual(that: Any): Boolean = that.isInstanceOf[A]
     def productArity: Int = 2
     def productElement(n: Int): Any = n match {
@@ -41,7 +41,6 @@ class A(a: Boolean, s: String = "a")
       case _ =>
         throw new IndexOutOfBoundsException(n.toString())
     }
-
     override def productPrefix: String = "A"
     override def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](this)
   }
@@ -81,6 +80,22 @@ class A(a: Boolean, s: String = "a")
         }
       }
       override def describe: String = "A[" + ("Boolean" + "," + "String") + "]"
+    }
+
+    implicit def GenericA: Generic.Aux[A, Boolean :: String :: HNil] = new Generic[A] {
+      override type Repr = Boolean :: String :: HNil
+      override def to(f: A): Repr = LabelledGenericA.to(f)
+      override def from(r: Repr): A = r match {
+        case a :: s :: HNil =>
+          A(a, s)
+      }
+    }
+
+    implicit def LabelledGenericA: LabelledGeneric.Aux[A,
+        FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: HNil] = new LabelledGeneric[A] {
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: HNil
+      override def to(f: A): Repr = field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: HNil
+      override def from(r: Repr): A = GenericA.from(r)
     }
 
   }

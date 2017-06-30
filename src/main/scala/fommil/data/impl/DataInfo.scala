@@ -4,15 +4,12 @@ import scala.collection.immutable.Seq
 import scala.meta._
 
 object DataInfo {
-  case class DataMods(intern: Boolean, idEquals: Boolean)
-
   case class DataInfo(
     name: Type.Name,
     classParams: Seq[Term.Param],
     typeParams: Seq[Type.Param],
-    dataMods: DataMods
+    dataMods: Map[String, Boolean]
   ) {
-
     lazy val simpleTypeParams = typeParams.map(
       tparam => tparam.copy(mods = Seq(), tbounds = Type.Bounds(None, None))
     )
@@ -31,5 +28,7 @@ object DataInfo {
     })
 
     lazy val termName = Term.Name(name.value)
+
+    def getMod(mod: String): Boolean = dataMods.getOrElse(mod, false)
   }
 }

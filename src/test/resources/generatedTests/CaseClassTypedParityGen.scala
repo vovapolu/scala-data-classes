@@ -1,7 +1,8 @@
+//product serializable shapeless
 class A[T](a: Boolean, s: String, t: T)
---- {
-  final class A[T] private(private[this] var _a: Boolean, private[this] var _s: String, private[this] var _t: T) extends Product with Serializable {
-
+//---
+{
+  final class A[T] private (private[this] var _a: Boolean, private[this] var _s: String, private[this] var _t: T) extends Product with Serializable {
     def a: Boolean = this._a
     def s: String = this._s
     def t: T = this._t
@@ -15,6 +16,7 @@ class A[T](a: Boolean, s: String, t: T)
 
     override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
     override def toString: String = "A(" + (a.toString + "," + s.toString + "," + t.toString) + ")"
+    def copy(a: Boolean = this.a, s: String = this.s, t: T = this.t): A[T] = new A(a, s, t)
 
     @throws[_root_.java.io.IOException]
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
@@ -22,7 +24,6 @@ class A[T](a: Boolean, s: String, t: T)
       out.writeUTF(s)
       out.writeObject(t)
     }
-
     @throws[_root_.java.io.IOException]
     @throws[_root_.java.lang.ClassNotFoundException]
     private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
@@ -30,11 +31,8 @@ class A[T](a: Boolean, s: String, t: T)
       _s = in.readUTF()
       _t = in.readObject().asInstanceOf[T]
     }
-
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A(a, s, t)
-
-    def copy(a: Boolean = this.a, s: String = this.s, t: T = this.t): A[T] = new A(a, s, t)
 
     def canEqual(that: Any): Boolean = that.isInstanceOf[A[T]]
     def productArity: Int = 3
@@ -48,7 +46,6 @@ class A[T](a: Boolean, s: String, t: T)
       case _ =>
         throw new IndexOutOfBoundsException(n.toString())
     }
-
     override def productPrefix: String = "A"
     override def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](this)
   }
@@ -91,6 +88,27 @@ class A[T](a: Boolean, s: String, t: T)
       }
 
       override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + TT.describe) + "]"
+    }
+
+    implicit def GenericA[T]: Generic.Aux[A[T], Boolean :: String :: T :: HNil] = new Generic[A[T]] {
+      override type Repr = Boolean :: String :: T :: HNil
+      override def to(f: A[T]): Repr = LabelledGenericA[T].to(f)
+      override def from(r: Repr): A[T] = r match {
+        case a :: s :: t :: HNil =>
+          A(a, s, t)
+      }
+    }
+
+    implicit def LabelledGenericA[T]: LabelledGeneric.Aux[A[T],
+        FieldType[a_tpe.type, Boolean] ::
+        FieldType[s_tpe.type, String] ::
+        FieldType[t_tpe.type, T] :: HNil] = new LabelledGeneric[A[T]] {
+      override type Repr =
+        FieldType[a_tpe.type, Boolean] ::
+        FieldType[s_tpe.type, String] ::
+        FieldType[t_tpe.type, T] :: HNil
+      override def to(f: A[T]): Repr = field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: field[t_tpe.type](f.t) :: HNil
+      override def from(r: Repr): A[T] = GenericA[T].from(r)
     }
   }
 }

@@ -1,6 +1,7 @@
 package fommil.data.impl
 
 import scala.collection.immutable.Seq
+import scala.collection.mutable
 import scala.meta._
 
 object DataImpl {
@@ -19,9 +20,9 @@ object DataImpl {
   }
 
   def extractDataInfo(name: Type.Name,
-                                         ctor: Ctor.Primary,
-                                         tparams: Seq[Type.Param],
-                                         dataMods: DataMods): DataInfo = {
+                      ctor: Ctor.Primary,
+                      tparams: Seq[Type.Param],
+                      dataMods: Map[String, Boolean]): DataInfo = {
     validateCtor(ctor)
     DataInfo(name, ctor.paramss.flatten, tparams, dataMods)
   }
@@ -30,76 +31,60 @@ object DataImpl {
     val ctorParams = dataInfo.classParams.map(param =>
       param"private[this] var ${Term.Name("_" + param.name.value)}: ${param.decltpe.get}")
     // maybe it will be necessary to create unique names instead of prefix with "_"
+    val extendsClasses = mutable.Buffer[Ctor.Call]()
+    if (dataInfo.getMod("product"))
+      extendsClasses += ctor"Product"
+    if (dataInfo.getMod("serializable"))
+      extendsClasses += ctor"Serializable"
 
     q"""final class ${dataInfo.name}[..${dataInfo.simpleTypeParams}] private (..$ctorParams)
-                         extends Product with Serializable {
+                         extends ..${Seq(extendsClasses: _*)} {
        ..${builders.flatMap(_.classStats(dataInfo))}
     }"""
   }
 
   def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
-    q"""object ${Term.Name(dataInfo.name.value)} extends Serializable {
+    val extendsClasses = mutable.Buffer[Ctor.Call]()
+    if (dataInfo.getMod("serializable"))
+      extendsClasses += ctor"Serializable"
+
+    q"""object ${Term.Name(dataInfo.name.value)} extends ..${Seq(extendsClasses: _*)} {
        ..${builders.flatMap(_.objectStats(dataInfo))}
     }"""
   }
 
-  //  private [dataMacro] def getUsedNames(stats: Seq[Stat]): Seq[String] = {
-  //    stats.flatMap {
-  //      case q"..$_ val ..$names: $_ = $_" => names.map(name => name.name.value)
-  //      case q"..$_ var ..$names: $_ = $_" => names.map(name => name.name.value)
-  //      case q"..$_ def $name[..$_](...$_): $_ = $_" => Seq(name.value)
-  //      case q"..$_ type $tname[..$_] = $_" => Seq(tname.value)
-  //      case q"..$_ class $tname[..$_] ..$_ (...$_) extends $_" => Seq(tname.value)
-  //      case q"..$_ trait $tname[..$_] extends $_" => Seq(tname.value)
-  //      case q"..$_ object $name extends $_" => Seq(name.value)
-  //      case q"..$_ val ..$names: $_" => names.map(name => name.name.value)
-  //      case q"..$_ var ..$names: $_" => names.map(name => name.name.value)
-  //      case q"..$_ def $name[..$_](...$_): $tpe" => Seq(name.value)
-  //      case q"..$_ type $tname[..$_] >: $_ <: $_" => Seq(tname.value)
-  //      case _ => Seq()
-  //    }
-  //  }
-
-//  private[dataMacro] def validateUsedNames(names: Seq[String], dataMods: DataMods) = {
-//    val methodAbort = (method: String) => abort(s"""Data class shouldn't contain "$method" method""")
-//    names.foreach {
-//      case "apply" => methodAbort("apply")
-//      case "unapply" => methodAbort("unapply")
-//      case "productArity" => methodAbort("productArity")
-//      case "productElement" => methodAbort("productElement")
-//      case "productPrefix" => methodAbort("productPrefix")
-//      case "productIterator" => methodAbort("productIterator")
-//      case "copy" => methodAbort("copy")
-//
-//      case "equals" if dataMods.idEquals || dataMods.intern =>
-//        abort(s"""Data class shouldn't contain "equals" method with modificators""")
-//      case "equals" if dataMods.idEquals || dataMods.intern =>
-//        abort(s"""Data class shouldn't contain "equals" method with modificators""")
-//    }
-//  }
-
   def expand(clazz: Defn.Class,
-             intern: Boolean = false,
-             idEquals: Boolean = false): Term.Block = {
+             dataMods: Map[String, Boolean]): Term.Block = {
     clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
-        val dataInfo = extractDataInfo(name, ctor, tparams, DataMods(intern, idEquals))
-        val builders = Seq(
+        val dataInfo = extractDataInfo(name, ctor, tparams, dataMods)
+        val builders = mutable.Buffer(
           DataApplyBuilder,
           DataUnapplyBuilder,
           DataGettersBuilder,
           DataEqualsBuilder,
           DataHashCodeBuilder,
           DataToStringBuilder,
-          DataWriteObjectBuilder,
-          DataReadObjectBuilder,
-          DataReadResolveBuilder,
-          DataCopyBuilder,
-          DataProductMethodsBuilder,
-          DataShapelessBaseBuilder,
-          DataShapelessTypeableBuilder)
-        val newClass = buildClass(dataInfo, builders)
-        val newObject = buildObject(dataInfo, builders)
+          DataCopyBuilder
+        )
+
+        if (dataInfo.getMod("serializable"))
+          builders ++= Seq(
+            DataWriteObjectBuilder,
+            DataReadObjectBuilder,
+            DataReadResolveBuilder
+          )
+        if (dataInfo.getMod("product"))
+          builders += DataProductMethodsBuilder
+        if (dataInfo.getMod("shapeless"))
+          builders ++= Seq(
+            DataShapelessBaseBuilder,
+            DataShapelessTypeableBuilder,
+            DataShapelessGenericsBuilder
+          )
+
+        val newClass = buildClass(dataInfo, builders.toList)
+        val newObject = buildObject(dataInfo, builders.toList)
         println((newClass, newObject).toString())
 
         Term.Block(Seq(
@@ -112,32 +97,25 @@ object DataImpl {
   }
 }
 
-class data(product: Boolean = false,
-           checkSerializable: Boolean = false,
-           intern: Boolean = false,
-           idEquals: Boolean = false) extends scala.annotation.StaticAnnotation {
+class data(product: Boolean) extends scala.annotation.StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
-    //println(this.structure)
-    var intern: Boolean = false
-    var idEquals: Boolean = false
-    this match {
-      case q"new data(..$args)" => args.foreach {
-        case arg"intern = ${Lit(b: Boolean)}" => intern = b
-        case arg"idEquals = ${Lit(b: Boolean)}" => idEquals = b
-        case _ =>
-      }
-      case _ =>
+    println(this.structure)
+
+    val dataMods: Map[String, Boolean] = this match {
+      case q"new data(..$args)" => args.flatMap {
+        case arg"${Term.Name(name)} = ${Lit.Boolean(b)}" => Some(name -> b)
+        case _ => None
+      }.toMap
+      case _ => Map.empty
     }
 
-    if (intern && idEquals) {
-      abort("Can't do interning with id equations")
-    }
+    println(dataMods)
 
     defn match {
       case Term.Block(Seq(cls@Defn.Class(Seq(), name, Seq(), ctor, tmpl), companion: Defn.Object)) =>
         abort("@data block")
-      case clazz: Defn.Class => DataImpl.expand(clazz, intern, idEquals)
+      case clazz: Defn.Class => DataImpl.expand(clazz, dataMods)
     }
   }
 }

@@ -22,7 +22,7 @@ object DataStat {
         })
 
       Seq(
-        if (dataInfo.dataMods.intern) {
+        if (dataInfo.getMod("intern")) {
           q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
             val newVal = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$args)
             ${Term.Name(dataInfo.name.value)}.intern(newVal)
@@ -75,9 +75,9 @@ object DataStat {
       }
 
       Seq(
-        if (dataInfo.dataMods.intern) {
+        if (dataInfo.getMod("intern")) {
           q"override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object])"
-        } else if (dataInfo.dataMods.idEquals) {
+        } else if (dataInfo.getMod("idEquals")) {
           q"""override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) ||
             (thatAny match {
               case that: ${dataInfo.dataPatType} =>
@@ -138,7 +138,9 @@ object DataStat {
   object DataToStringBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
       val paramsToString = dataInfo.classParams.drop(1)
-        .foldLeft[Term](q"${Term.Name(dataInfo.classParams.head.name.value)}.toString") { case (expr, param) => q"$expr + ${Lit.String(",")} + ${Term.Name(param.name.value)}.toString" }
+        .foldLeft[Term](q"${Term.Name(dataInfo.classParams.head.name.value)}.toString") {
+          case (expr, param) => q"$expr + ${Lit.String(",")} + ${Term.Name(param.name.value)}.toString"
+        }
       Seq(
         q"""
             override def toString: String =
@@ -298,24 +300,85 @@ object DataStat {
           }
 
         val targs = dataInfo.classTypeNames.drop(1)
-          .foldLeft[Term](getTypeDescribe(dataInfo.classTypeNames.head)) { case (expr, tpe) => q"$expr + ${Lit.String(",")} + ${getTypeDescribe(tpe)}" }
+          .foldLeft[Term](getTypeDescribe(dataInfo.classTypeNames.head)) {
+            case (expr, tpe) => q"$expr + ${Lit.String(",")} + ${getTypeDescribe(tpe)}"
+          }
         q"${Lit.String(dataInfo.name.value + "[")} + $targs + ${Lit.String("]")}"
       }
 
       Seq(q"""
-       implicit def $typeableName[..${dataInfo.simpleTypeParams}]
+        implicit def $typeableName[..${dataInfo.simpleTypeParams}]
         (..$implicitTypeables): Typeable[${dataInfo.dataType}] =
-           new Typeable[${dataInfo.dataType}] {
-             override def cast(t: Any): Option[${dataInfo.dataType}] = {
-               ..$typeCases
-               t match {
-                 case f @ $dataWithTypeCases => Some($dataCreating)
-                 case _                         => None
-               }
-             }
-             override def describe: String = $describe
-           }
-      """)
+          new Typeable[${dataInfo.dataType}] {
+            override def cast(t: Any): Option[${dataInfo.dataType}] = {
+              ..$typeCases
+              t match {
+                case f @ $dataWithTypeCases => Some($dataCreating)
+                case _                      => None
+              }
+            }
+            override def describe: String = $describe
+          }
+        """)
+    }
+  }
+
+  object DataShapelessGenericsBuilder extends DataStatBuilder {
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
+      val genericName = Term.Name("Generic" + dataInfo.name.value)
+      val genericWithTypes = if (dataInfo.typeParamsNames.nonEmpty) {
+        q"$genericName[..${dataInfo.typeParamsNames}]"
+      } else {
+        genericName
+      }
+      val labelledGenericName = Term.Name("LabelledGeneric" + dataInfo.name.value)
+      val labelledGenericWithTypes = if (dataInfo.typeParamsNames.nonEmpty) {
+        q"$labelledGenericName[..${dataInfo.typeParamsNames}]"
+      } else {
+        labelledGenericName
+      }
+
+      val reprType =
+        dataInfo.classTypeNames.foldRight[Type](Type.Name("HNil")) { case (tpe, expr) => t"$tpe :: $expr" }
+      val labelledReprType =
+        dataInfo.classParams.zip(dataInfo.classTypeNames).foldRight[Type](Type.Name("HNil")) {
+          case ((param, tpe), expr) => t"FieldType[${Term.Name(param.name.value + "_tpe")}.type, $tpe] :: $expr"
+        }
+
+      val labelledFields =
+        dataInfo.classParams.foldRight[Term](Term.Name("HNil")) {
+          case (param, expr) =>
+            q"field[${Term.Name(param.name.value + "_tpe")}.type](f.${Term.Name(param.name.value)}) :: $expr"
+        }
+      val fields = dataInfo.classParams.foldRight[Pat](Term.Name("HNil")) {
+        case (param, expr) => p"${Pat.Var.Term(Term.Name(param.name.value))} :: $expr"
+      }
+      val dataCreating = q"${dataInfo.termName}(..${dataInfo.classParams.map(param => Term.Name(param.name.value))})"
+
+      val generic =
+        q"""
+        implicit def $genericName[..${dataInfo.typeParams}]:
+          Generic.Aux[${dataInfo.dataType}, $reprType] =
+          new Generic[${dataInfo.dataType}] {
+            override type Repr = $reprType
+            override def to(f: ${dataInfo.dataType}): Repr = $labelledGenericWithTypes.to(f)
+            override def from(r: Repr): ${dataInfo.dataType} = r match {
+              case ($fields) => $dataCreating
+            }
+        }"""
+
+      val labelledGeneric =
+        q"""
+        implicit def $labelledGenericName[..${dataInfo.typeParams}]:
+          LabelledGeneric.Aux[${dataInfo.dataType}, $labelledReprType] =
+          new LabelledGeneric[${dataInfo.dataType}] {
+            override type Repr = $labelledReprType
+            override def to(f: ${dataInfo.dataType}): Repr = $labelledFields
+            override def from(r: Repr): ${dataInfo.dataType} = $genericWithTypes.from(r)
+          }
+          """
+
+      Seq(generic, labelledGeneric)
     }
   }
 
