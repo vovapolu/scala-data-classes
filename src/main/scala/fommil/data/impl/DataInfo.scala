@@ -26,6 +26,8 @@ object DataInfo {
       case Some(tpe: Type.Name) => tpe
       case _                    => abort("Currently only Type.Name as field type is supported")
     })
+    lazy val classParamNames = classParams.map(param => Term.Name(param.name.value))
+    lazy val classParamsWithTypes = classParamNames.zip(classTypeNames)
 
     lazy val termName = Term.Name(name.value)
 

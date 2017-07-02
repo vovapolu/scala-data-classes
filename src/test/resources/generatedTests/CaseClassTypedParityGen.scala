@@ -16,7 +16,7 @@ class A[T](a: Boolean, s: String, t: T)
 
     override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
     override def toString: String = "A(" + (a.toString + "," + s.toString + "," + t.toString) + ")"
-    def copy(a: Boolean = this.a, s: String = this.s, t: T = this.t): A[T] = new A(a, s, t)
+    def copy[N$T >: T](a: Boolean = this.a, s: String = this.s, t: N$T = this.t): A[N$T] = A(a, s, t)
 
     @throws[_root_.java.io.IOException]
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {

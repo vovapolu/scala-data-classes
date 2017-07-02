@@ -158,14 +158,27 @@ object DataStat {
 
   object DataCopyBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val copyParams = dataInfo.classParams.map(
-        param => Term.Param(
-          Seq(), Term.Name(param.name.value), param.decltpe, Some(q"this.${Term.Name(param.name.value)}")
-        )
-      )
-      val copyArgs = dataInfo.classParams.map(param => Term.Name(param.name.value))
+      val newTypes = dataInfo.typeParams.map(tparam => Type.Name("N$" + tparam.name.value))
+      val oldToNewTypes = dataInfo.typeParamsNames.map(_.value).zip(newTypes).toMap
+      val newTypeParams: Seq[Type.Param] = dataInfo.typeParamsNames.zip(newTypes).map {
+        case (oldTpe, newTpe) =>
+          Type.Param(Seq(), newTpe, Seq(), Type.Bounds(Some(oldTpe), None), Seq(), Seq())
+      }
+      val newDataType = if (newTypeParams.nonEmpty) {
+        t"${dataInfo.name}[..$newTypes]"
+      } else {
+        t"${dataInfo.name}"
+      }
 
-      Seq(q"def copy(..$copyParams): ${dataInfo.dataType} = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$copyArgs)")
+      val copyParams = dataInfo.classParamsWithTypes.map {
+        case (param, tpe) =>
+          param"$param: ${oldToNewTypes.getOrElse(tpe.value, tpe)} = this.$param"
+      }
+
+      Seq(
+        q"""def copy[..$newTypeParams](..$copyParams): $newDataType =
+          ${Term.Name(dataInfo.name.value)}(..${dataInfo.classParamNames})"""
+      )
     }
   }
 
@@ -326,7 +339,7 @@ object DataStat {
   object DataShapelessGenericsBuilder extends DataStatBuilder {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
       val genericName = Term.Name("Generic" + dataInfo.name.value)
-      val genericWithTypes = if (dataInfo.typeParamsNames.nonEmpty) {
+      val genericWithTypes = if (dataInfo.simpleTypeParams.nonEmpty) {
         q"$genericName[..${dataInfo.typeParamsNames}]"
       } else {
         genericName
@@ -357,7 +370,7 @@ object DataStat {
 
       val generic =
         q"""
-        implicit def $genericName[..${dataInfo.typeParams}]:
+        implicit def $genericName[..${dataInfo.simpleTypeParams}]:
           Generic.Aux[${dataInfo.dataType}, $reprType] =
           new Generic[${dataInfo.dataType}] {
             override type Repr = $reprType
@@ -369,7 +382,7 @@ object DataStat {
 
       val labelledGeneric =
         q"""
-        implicit def $labelledGenericName[..${dataInfo.typeParams}]:
+        implicit def $labelledGenericName[..${dataInfo.simpleTypeParams}]:
           LabelledGeneric.Aux[${dataInfo.dataType}, $labelledReprType] =
           new LabelledGeneric[${dataInfo.dataType}] {
             override type Repr = $labelledReprType

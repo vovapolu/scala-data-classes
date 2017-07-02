@@ -15,7 +15,7 @@ class A(a: Boolean, s: String = "a")
 
     override def hashCode(): Int = a.hashCode + 13 * s.hashCode
     override def toString: String = "A(" + (a.toString + "," + s.toString) + ")"
-    def copy(a: Boolean = this.a, s: String = this.s): A = new A(a, s)
+    def copy(a: Boolean = this.a, s: String = this.s): A = A(a, s)
 
     @throws[_root_.java.io.IOException]
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {

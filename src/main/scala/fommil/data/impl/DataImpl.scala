@@ -97,14 +97,16 @@ object DataImpl {
   }
 }
 
-class data(product: Boolean) extends scala.annotation.StaticAnnotation {
+class data(product: Boolean,
+           serializable: Boolean,
+           shapeless: Boolean) extends scala.annotation.StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
     println(this.structure)
 
     val dataMods: Map[String, Boolean] = this match {
       case q"new data(..$args)" => args.flatMap {
-        case arg"${Term.Name(name)} = ${Lit.Boolean(b)}" => Some(name -> b)
+        case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) => Some(name -> b)
         case _ => None
       }.toMap
       case _ => Map.empty
