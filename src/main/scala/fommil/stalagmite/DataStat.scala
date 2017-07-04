@@ -1,6 +1,6 @@
-package fommil.data.impl
+package fommil.stalagmite
 
-import fommil.data.impl.DataInfo.DataInfo
+import DataInfo.DataInfo
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -14,7 +14,6 @@ object DataStat {
 
   object DataApplyBuilder extends DataStatBuilder {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
-      val args = dataInfo.classParams.map(param => Term.Name(param.name.value))
       val params = dataInfo.classParams.map(param =>
         param.default match {
           case Some(defaultVal) => param"${Term.Name(param.name.value)}: ${param.decltpe.get} = $defaultVal"
@@ -22,17 +21,10 @@ object DataStat {
         })
 
       Seq(
-        if (dataInfo.getMod("intern")) {
-          q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
-            val newVal = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$args)
-            ${Term.Name(dataInfo.name.value)}.intern(newVal)
+        q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
+            val newVal = new ${Ctor.Ref.Name(dataInfo.name.value)}(..${dataInfo.classParamNames})
+            newVal.synchronized(newVal)
           }"""
-        } else {
-          q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
-              val newVal = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$args)
-              newVal.synchronized(newVal)
-            }"""
-        }
       )
     }
   }
@@ -60,53 +52,32 @@ object DataStat {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
       dataInfo.classParams.zip(dataInfo.classTypes).map {
         case (param, tpe) =>
-          q"def ${Term.Name(param.name.value)}: $tpe = this.${Term.Name("_" + param.name.value)}"
+          q"def ${dataInfo.termName}: $tpe = this.${Term.Name("_" + param.name.value)}"
       }
     }
   }
 
   object DataEqualsBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val eqs = dataInfo.classParams.map(param =>
-        q"that.${Term.Name(param.name.value)} == this.${Term.Name(param.name.value)}")
+      val eqs = dataInfo.classParamNames.map(paramName => q"that.$paramName == this.$paramName")
       val eqsWithAnds = eqs match {
         case Seq(eq1)            => eq1
         case Seq(eq1, rest @ _*) => rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
       }
 
       Seq(
-        if (dataInfo.getMod("intern")) {
-          q"override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object])"
-        } else if (dataInfo.getMod("idEquals")) {
-          q"""override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) ||
-            (thatAny match {
-              case that: ${dataInfo.dataPatType} =>
-                val idTuple = if (this.id > that.id) (that.id, this.id) else (this.id, that.id)
-                val res = ${dataInfo.termName}.idEquals.get(idTuple)
-                if (res == null) {
-                  val realEquals = $eqsWithAnds
-                  ${dataInfo.termName}.idEquals.put(idTuple, Boolean.box(realEquals))
-                  realEquals
-                } else {
-                  Boolean.unbox(res)
-                }
-              case _ => false
-           })"""
-        } else {
-          q"""override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) ||
-            (thatAny match {
-              case that: ${dataInfo.dataPatType} => $eqsWithAnds
-              case _ => false
-           })"""
-        }
+        q"""override def equals(thatAny: Any): Boolean = thatAny match {
+            case that: ${dataInfo.dataPatType} => (this eq that) || ($eqsWithAnds)
+            case _ => false
+         }"""
       )
     }
   }
 
   object DataProductMethodsBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val casesForElements = dataInfo.classParams.zipWithIndex.map {
-        case (param, i) => p"case ${Lit.Int(i)} => this.${Term.Name(param.name.value)}"
+      val casesForElements = dataInfo.classParamNames.zipWithIndex.map {
+        case (param, i) => p"case ${Lit.Int(i)} => this.$param"
       }
       Seq(
         q"def canEqual(that: Any): Boolean = that.isInstanceOf[${dataInfo.dataType}]",
@@ -125,27 +96,47 @@ object DataStat {
 
   object DataHashCodeBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val hashCodeExpr = dataInfo.classParams.dropRight(1)
-        .foldRight[Term](q"${Term.Name(dataInfo.classParams.last.name.value)}.hashCode") {
-          case (param, expr) => q"${Term.Name(param.name.value)}.hashCode + 13 * ($expr)"
+      val hashCodeExpr = {
+        def paramToHashCode(name: Term.Name) = q"$name.hashCode"
+
+        dataInfo.classParamNames.reverse match {
+          case Seq(param1)            => paramToHashCode(param1)
+          case Seq(param1, rest @ _*) => rest.foldLeft[Term](paramToHashCode(param1)) {
+            case (expr, param) => q"$param.hashCode + 13 * ($expr)"
+          }
         }
+      }
+
       Seq(
-        q"override def hashCode(): Int = $hashCodeExpr"
+        if (dataInfo.getMod("memoiseHashCode")) {
+          q"override val hashCode(): Int = $hashCodeExpr"
+        } else {
+          q"override def hashCode(): Int = $hashCodeExpr"
+        }
       )
     }
   }
 
   object DataToStringBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val paramsToString = dataInfo.classParams.drop(1)
-        .foldLeft[Term](q"${Term.Name(dataInfo.classParams.head.name.value)}.toString") {
-          case (expr, param) => q"$expr + ${Lit.String(",")} + ${Term.Name(param.name.value)}.toString"
+      val paramsToString = {
+        def paramToString(name: Term.Name) = q"$name.toString"
+
+        dataInfo.classParamNames match {
+          case Seq(param1)            => paramToString(param1)
+          case Seq(param1, rest @ _*) => rest.foldLeft[Term](paramToString(param1)) {
+            case (expr, param) => q"$expr + ${Lit.String(",")} + $param.toString"
+          }
         }
+      }
+      val toStringBody = q"${Lit.String(dataInfo.name.value + "(")} + $paramsToString + ${Lit.String(")")}"
+
       Seq(
-        q"""
-            override def toString: String =
-              ${Lit.String(dataInfo.name.value + "(")} + $paramsToString + ${Lit.String(")")}
-          """
+        if (dataInfo.getMod("memoiseToString")) {
+          q"override val toString: String = $toStringBody"
+        } else {
+          q"override def toString: String = $toStringBody"
+        }
       )
     }
 
@@ -163,6 +154,7 @@ object DataStat {
       val newTypeParams: Seq[Type.Param] = dataInfo.typeParamsNames.zip(newTypes).map {
         case (oldTpe, newTpe) =>
           Type.Param(Seq(), newTpe, Seq(), Type.Bounds(Some(oldTpe), None), Seq(), Seq())
+          // I couldn't find way to do it as quasiquote
       }
       val newDataType = if (newTypeParams.nonEmpty) {
         t"${dataInfo.name}[..$newTypes]"
@@ -184,7 +176,7 @@ object DataStat {
 
   object DataWriteObjectBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val writes = dataInfo.classParams.zip(dataInfo.classTypes).map {
+      val writes = dataInfo.classParamNames.zip(dataInfo.classTypes).map {
         case (param, tpe) =>
           q"out.${
             tpe match {
@@ -199,7 +191,7 @@ object DataStat {
               case t"String"  => q"writeUTF"
               case _          => q"writeObject"
             }
-          }(${Term.Name(param.name.value)})"
+          }($param)"
       }
       Seq(q"""
           @throws[_root_.java.io.IOException]
@@ -218,9 +210,9 @@ object DataStat {
 
   object DataReadObjectBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val reads = dataInfo.classParams.zip(dataInfo.classTypes).map {
+      val reads = dataInfo.classParamNames.zip(dataInfo.classTypes).map {
         case (param, tpe) =>
-          q"${Term.Name { "_" + param.name.value }} = ${
+          q"${Term.Name { "_" + param.value }} = ${
             tpe match {
               case t"Boolean" => q"in.readBoolean()"
               case t"Byte"    => q"in.readByte()"
@@ -254,26 +246,25 @@ object DataStat {
 
   object DataReadResolveBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
-      val args = dataInfo.classParams.map(param => Term.Name(param.name.value))
-
       Seq(q"""
             @throws[_root_.java.io.ObjectStreamException]
-            private[this] def readResolve(): Any = ${Term.Name(dataInfo.name.value)}(..$args)
+            private[this] def readResolve(): Any = ${dataInfo.dataCreating}
           """)
     }
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =
       Seq(q"""
             @throws[_root_.java.io.ObjectStreamException]
-            private[this] def readResolve(): Any = ${Term.Name(dataInfo.name.value)}
+            private[this] def readResolve(): Any = ${dataInfo.termName}
           """)
   }
 
   object DataShapelessBaseBuilder extends DataStatBuilder {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
 
-      val typeSymbols = dataInfo.classParams.map(param =>
-        q"val ${Pat.Var.Term(Term.Name(param.name.value + "_tpe"))} = Symbol(${Lit.String(param.name.value)}).narrow")
+      val typeSymbols = dataInfo.classParamNames.map(name =>
+        q"""val ${Pat.Var.Term(Term.Name(name.value + "_tpe"))} =
+            Symbol(${Lit.String(name.value)}).narrow""")
 
       Seq(
         q"import _root_.shapeless.{::, HNil, Generic, LabelledGeneric, Typeable, TypeCase}",
@@ -289,33 +280,38 @@ object DataStat {
       val implicitTypeables = dataInfo.typeParams.map(tparam =>
         param"implicit ${Term.Name("T" + tparam.name.value)}: Typeable[${Type.Name(tparam.name.value)}]")
 
+      def isTypeParam(tname: Type.Name) = dataInfo.typeParams.map(_.name.value).contains(tname.value)
+
       val typeCases = dataInfo.typeParams.map(tparam =>
         q"val ${Pat.Var.Term(Term.Name("TC_" + tparam.name.value))} = TypeCase[${Type.Name(tparam.name.value)}]")
       val dataWithTypeCases = {
-        val args = dataInfo.classParams.zip(dataInfo.classTypeNames).map {
+        val args = dataInfo.classParamsWithTypes.map {
           case (param, tpe) =>
-            if (dataInfo.typeParams.map(_.name.value).contains(tpe.value)) {
-              p"${Term.Name("TC_" + tpe.value)}(${Pat.Var.Term(Term.Name(param.name.value))})"
+            if (isTypeParam(tpe)) {
+              p"${Term.Name("TC_" + tpe.value)}(${Pat.Var.Term(param)})"
             } else {
-              p"${Pat.Var.Term(Term.Name(param.name.value))}"
+              p"${Pat.Var.Term(param)}"
             }
         }
         p"${dataInfo.termName}(..$args)"
       }
-      val dataCreating = q"${dataInfo.termName}(..${dataInfo.classParams.map(param => Term.Name(param.name.value))})"
 
       val describe = {
         def getTypeDescribe(tpe: Type.Name): Term =
-          if (dataInfo.typeParams.map(_.name.value).contains(tpe.value)) {
+          if (isTypeParam(tpe)) {
             q"${Term.Name("T" + tpe.value)}.describe"
           } else {
             Lit.String(tpe.value)
           }
 
-        val targs = dataInfo.classTypeNames.drop(1)
-          .foldLeft[Term](getTypeDescribe(dataInfo.classTypeNames.head)) {
-            case (expr, tpe) => q"$expr + ${Lit.String(",")} + ${getTypeDescribe(tpe)}"
+        val targs = {
+          dataInfo.classTypeNames match {
+            case Seq(tname1) => getTypeDescribe(tname1)
+            case Seq(tname1, rest @ _*) => rest.foldLeft[Term](getTypeDescribe(tname1)) {
+              case (expr, tname) => q"$expr + ${Lit.String(",")} + ${getTypeDescribe(tname)}"
+            }
           }
+        }
         q"${Lit.String(dataInfo.name.value + "[")} + $targs + ${Lit.String("]")}"
       }
 
@@ -326,7 +322,7 @@ object DataStat {
             override def cast(t: Any): Option[${dataInfo.dataType}] = {
               ..$typeCases
               t match {
-                case f @ $dataWithTypeCases => Some($dataCreating)
+                case f @ $dataWithTypeCases => Some(${dataInfo.dataCreating})
                 case _                      => None
               }
             }
@@ -351,22 +347,19 @@ object DataStat {
         labelledGenericName
       }
 
-      val reprType =
-        dataInfo.classTypeNames.foldRight[Type](Type.Name("HNil")) { case (tpe, expr) => t"$tpe :: $expr" }
-      val labelledReprType =
-        dataInfo.classParams.zip(dataInfo.classTypeNames).foldRight[Type](Type.Name("HNil")) {
-          case ((param, tpe), expr) => t"FieldType[${Term.Name(param.name.value + "_tpe")}.type, $tpe] :: $expr"
-        }
-
-      val labelledFields =
-        dataInfo.classParams.foldRight[Term](Term.Name("HNil")) {
-          case (param, expr) =>
-            q"field[${Term.Name(param.name.value + "_tpe")}.type](f.${Term.Name(param.name.value)}) :: $expr"
-        }
-      val fields = dataInfo.classParams.foldRight[Pat](Term.Name("HNil")) {
-        case (param, expr) => p"${Pat.Var.Term(Term.Name(param.name.value))} :: $expr"
+      val reprType = dataInfo.classTypeNames.foldRight[Type](Type.Name("HNil")) {
+        case (tpe, expr) => t"$tpe :: $expr"
       }
-      val dataCreating = q"${dataInfo.termName}(..${dataInfo.classParams.map(param => Term.Name(param.name.value))})"
+      val labelledReprType = dataInfo.classParamsWithTypes.foldRight[Type](Type.Name("HNil")) {
+        case ((param, tpe), expr) => t"FieldType[${Term.Name(param.value + "_tpe")}.type, $tpe] :: $expr"
+      }
+
+      val labelledFields = dataInfo.classParamNames.foldRight[Term](Term.Name("HNil")) {
+        case (param, expr) => q"field[${Term.Name(param.value + "_tpe")}.type](f.$param) :: $expr"
+      }
+      val fields = dataInfo.classParamNames.foldRight[Pat](Term.Name("HNil")) {
+        case (param, expr) => p"${Pat.Var.Term(param)} :: $expr"
+      }
 
       val generic =
         q"""
@@ -376,7 +369,7 @@ object DataStat {
             override type Repr = $reprType
             override def to(f: ${dataInfo.dataType}): Repr = $labelledGenericWithTypes.to(f)
             override def from(r: Repr): ${dataInfo.dataType} = r match {
-              case ($fields) => $dataCreating
+              case ($fields) => ${dataInfo.dataCreating}
             }
         }"""
 

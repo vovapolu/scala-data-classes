@@ -1,6 +1,9 @@
 package fommil
 
-import fommil.data.impl.DataImpl
+import _root_.scala._
+import _root_.scala.Predef._
+
+import fommil.stalagmite.DataImpl
 import org.scalatest._
 import org.scalatest.Matchers._
 

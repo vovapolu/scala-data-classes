@@ -1,5 +1,8 @@
 package fommil
 
+import _root_.scala._
+import _root_.scala.Predef._
+
 import java.io._
 
 import org.scalatest._

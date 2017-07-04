@@ -1,5 +1,8 @@
 package testing.memoised
 
+import _root_.scala._
+import _root_.scala.Predef._
+
 // @data(
 //   memoise = true,
 //   memoiseRefs = Seq('s),
@@ -13,7 +16,7 @@ package testing.memoised
 final class Foo private (
   private[this] var _a: Boolean,
   private[this] var _s: String
-) extends Serializable {
+) extends scala.Serializable {
 
   def a: Boolean = _a
   def s: String = _s
@@ -23,7 +26,7 @@ final class Foo private (
   // allows the user to re-memoise if the Interner was flushed. Only
   // generated if memoise = true & memoiseStrong = false. Called
   // .intern because there is precedent with String.intern
-  def intern: Foo = Foo(a, s)
+  // def intern: Foo = Foo(a, s) FIXME memoise && !memoiseStrong is false, is it right?
 
   override val toString: String = s"Foo($a,$s)"
   override val hashCode: Int = a.hashCode + 13 * s.hashCode
@@ -40,7 +43,7 @@ final class Foo private (
     out.writeUTF(s)
   }
   @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
+  @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
     _a = in.readBoolean()
     _s = in.readUTF()
@@ -51,14 +54,14 @@ final class Foo private (
 }
 
 // companionExtends = true
-final object Foo extends ((Boolean, String) => Foo) with Serializable {
+final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
   override def toString = "Foo"
 
   // incase somebody serialises the companion (it happens!)
   @throws[java.io.IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
   @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
+  @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
   @throws[java.io.ObjectStreamException]
   private[this] def readResolve(raw: Foo.type): Any = Foo

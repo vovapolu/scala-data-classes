@@ -1,5 +1,8 @@
 package testing.optimiseheap
 
+import _root_.scala._
+import _root_.scala.Predef._
+
 // @data(
 //   optimiseHeapOptions = true,
 //   optimiseHeapBooleans = true,
@@ -9,7 +12,7 @@ package testing.optimiseheap
 final class Foo private (
   private[this] var _bitmask: Long,
   private[this] var _s: Array[Byte]
-) extends Serializable {
+) extends scala.Serializable {
 
   def a: Option[Boolean] = {
     if ((_bitmask & (1 << 0)) != 0) None
@@ -47,7 +50,7 @@ final class Foo private (
     out.writeObject(s: Serializable)
   }
   @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
+  @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
     val a = in.readObject().asInstanceOf[Option[Boolean]]
     val b = in.readObject().asInstanceOf[Option[Boolean]]
@@ -61,13 +64,13 @@ final class Foo private (
 
 }
 
-final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => Foo) with Serializable {
+final object Foo extends ((Option[Boolean], Option[Boolean], Option[String]) => Foo) with scala.Serializable {
   override def toString = "Foo"
 
   @throws[java.io.IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
   @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
+  @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
   @throws[java.io.ObjectStreamException]
   private[this] def readResolve(raw: Foo.type): Any = Foo

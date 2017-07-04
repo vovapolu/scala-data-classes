@@ -1,7 +1,6 @@
-package fommil.data.impl
+package fommil.stalagmite
 
 import scala.collection.immutable.Seq
-import scala.collection.mutable
 import scala.meta._
 
 object DataImpl {
@@ -31,24 +30,35 @@ object DataImpl {
     val ctorParams = dataInfo.classParams.map(param =>
       param"private[this] var ${Term.Name("_" + param.name.value)}: ${param.decltpe.get}")
     // maybe it will be necessary to create unique names instead of prefix with "_"
-    val extendsClasses = mutable.Buffer[Ctor.Call]()
-    if (dataInfo.getMod("product"))
-      extendsClasses += ctor"Product"
-    if (dataInfo.getMod("serializable"))
-      extendsClasses += ctor"Serializable"
+    val modsToClasses = Seq(
+      "product" -> ctor"_root_.scala.Product",
+      "serializable" -> ctor"_root_.scala.Serializable"
+    )
+    val extendsClasses = modsToClasses.collect {
+      case (mod, ctor) if dataInfo.getMod(mod) => ctor
+    }
 
     q"""final class ${dataInfo.name}[..${dataInfo.simpleTypeParams}] private (..$ctorParams)
                          extends ..${Seq(extendsClasses: _*)} {
+       import _root_.scala._
+       import _root_.scala.Predef._
+
        ..${builders.flatMap(_.classStats(dataInfo))}
     }"""
   }
 
   def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
-    val extendsClasses = mutable.Buffer[Ctor.Call]()
-    if (dataInfo.getMod("serializable"))
-      extendsClasses += ctor"Serializable"
+    val modsToClasses = Seq(
+      "serializable" -> ctor"_root_.scala.Serializable"
+    )
+    val extendsClasses = modsToClasses.collect {
+      case (mod, ctor) if dataInfo.getMod(mod) => ctor
+    }
 
     q"""object ${Term.Name(dataInfo.name.value)} extends ..${Seq(extendsClasses: _*)} {
+       import _root_.scala._
+       import _root_.scala.Predef._
+
        ..${builders.flatMap(_.objectStats(dataInfo))}
     }"""
   }
@@ -58,7 +68,22 @@ object DataImpl {
     clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
         val dataInfo = extractDataInfo(name, ctor, tparams, dataMods)
-        val builders = mutable.Buffer(
+
+        val modsToBuilders = Seq(
+          "product" -> Seq(DataProductMethodsBuilder),
+          "serializable" -> Seq(
+            DataWriteObjectBuilder,
+            DataReadObjectBuilder,
+            DataReadResolveBuilder
+          ),
+          "shapeless" -> Seq(
+            DataShapelessBaseBuilder,
+            DataShapelessTypeableBuilder,
+            DataShapelessGenericsBuilder
+          )
+        )
+
+        val builders = Seq(
           DataApplyBuilder,
           DataUnapplyBuilder,
           DataGettersBuilder,
@@ -66,22 +91,9 @@ object DataImpl {
           DataHashCodeBuilder,
           DataToStringBuilder,
           DataCopyBuilder
-        )
-
-        if (dataInfo.getMod("serializable"))
-          builders ++= Seq(
-            DataWriteObjectBuilder,
-            DataReadObjectBuilder,
-            DataReadResolveBuilder
-          )
-        if (dataInfo.getMod("product"))
-          builders += DataProductMethodsBuilder
-        if (dataInfo.getMod("shapeless"))
-          builders ++= Seq(
-            DataShapelessBaseBuilder,
-            DataShapelessTypeableBuilder,
-            DataShapelessGenericsBuilder
-          )
+        ) ++ modsToBuilders.collect {
+          case (mod, bs) if dataInfo.getMod(mod) => bs
+        }.flatten
 
         val newClass = buildClass(dataInfo, builders.toList)
         val newObject = buildObject(dataInfo, builders.toList)

@@ -1,5 +1,8 @@
 package testing.caseclass
 
+import _root_.scala._
+import _root_.scala.Predef._
+
 // example of feature parity with final case class
 
 // @data(product = true, checkSerializable = false)
@@ -9,7 +12,7 @@ final class Foo[+T] private (
   private[this] var _s: String,
   private[this] var _t: T,
   private[this] var _i: Int
-) extends Serializable with Product {
+) extends scala.Serializable with scala.Product {
   def a: Boolean = _a
   def s: String = _s
   def t: T = _t
@@ -42,7 +45,7 @@ final class Foo[+T] private (
     out.writeInt(i)
   }
   @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
+  @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
     _a = in.readBoolean()
     _s = in.readUTF()
@@ -56,14 +59,14 @@ final class Foo[+T] private (
 }
 
 // companionExtends would try to add `extends ((...) => Foo)` for non-parametric classes
-final object Foo extends Serializable {
+final object Foo extends scala.Serializable {
   override def toString = "Foo"
 
   // incase somebody serialises the companion (it happens!)
   @throws[java.io.IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
   @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
+  @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
   @throws[java.io.ObjectStreamException]
   private[this] def readResolve(raw: Foo.type): Any = Foo

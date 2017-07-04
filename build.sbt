@@ -1,6 +1,6 @@
 inThisBuild(
   Seq(
-    sonatypeGithub := ("fommil", "scala-data-classes"),
+    sonatypeGithub := ("fommil", "stalagmite"),
     licenses := Seq(Apache2),
     scalaVersion := "2.12.2"
   )
@@ -30,4 +30,9 @@ macroAnnotationSettings
 javaOptions in Test ++= Seq(
   s"""-Dpcplod.settings=${(scalacOptions in Test).value.mkString(",")}""",
   s"""-Dpcplod.classpath=${(fullClasspath in Test).value.map(_.data).mkString(",")}"""
+)
+
+scalacOptions in Test ++= Seq(
+  "-Yno-imports",
+  "-Yno-predef"
 )

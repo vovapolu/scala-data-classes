@@ -3,13 +3,16 @@ class A[T](i: Int, b: Boolean, t: T)
 //---
 {
   final class A[T] private (private[this] var _i: Int, private[this] var _b: Boolean, private[this] var _t: T) {
+    import _root_.scala._
+    import _root_.scala.Predef._
+
     def i: Int = this._i
     def b: Boolean = this._b
     def t: T = this._t
 
-    override def equals(thatAny: Any): Boolean = (this eq thatAny.asInstanceOf[Object]) || (thatAny match {
+    override def equals(thatAny: Any): Boolean = (thatAny match {
       case that: A[_] =>
-        that.i == this.i && that.b == this.b && that.t == this.t
+        (this eq that) || (that.i == this.i && that.b == this.b && that.t == this.t)
       case _ =>
         false
     })
@@ -21,6 +24,9 @@ class A[T](i: Int, b: Boolean, t: T)
   }
 
   object A {
+    import _root_.scala._
+    import _root_.scala.Predef._
+
     def apply[T](i: Int, b: Boolean, t: T): A[T] = {
       val newVal = new A(i, b, t)
       newVal.synchronized(newVal)

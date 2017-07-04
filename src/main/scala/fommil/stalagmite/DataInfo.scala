@@ -1,4 +1,4 @@
-package fommil.data.impl
+package fommil.stalagmite
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -30,6 +30,8 @@ object DataInfo {
     lazy val classParamsWithTypes = classParamNames.zip(classTypeNames)
 
     lazy val termName = Term.Name(name.value)
+
+    lazy val dataCreating = q"$termName(..$classParamNames)"
 
     def getMod(mod: String): Boolean = dataMods.getOrElse(mod, false)
   }
