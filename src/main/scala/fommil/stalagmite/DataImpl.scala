@@ -1,5 +1,7 @@
 package fommil.stalagmite
 
+import fommil.stalagmite.DataInfo.ExtraParams
+
 import scala.collection.immutable.Seq
 import scala.meta._
 
@@ -18,12 +20,22 @@ object DataImpl {
     }
   }
 
+  def validateDataInfo(dataInfo: DataInfo) = {
+    for {
+      ref <- dataInfo.extraParams.memoiseRefs
+    } {
+      if (!dataInfo.classParamNames.map(_.value).contains(ref))
+        abort(s"""There's no field called $ref""")
+    }
+  }
+
   def extractDataInfo(name: Type.Name,
                       ctor: Ctor.Primary,
                       tparams: Seq[Type.Param],
-                      dataMods: Map[String, Boolean]): DataInfo = {
+                      dataMods: Map[String, Boolean],
+                      extraParams: ExtraParams): DataInfo = {
     validateCtor(ctor)
-    DataInfo(name, ctor.paramss.flatten, tparams, dataMods)
+    DataInfo(name, ctor.paramss.flatten, tparams, dataMods, extraParams)
   }
 
   def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
@@ -64,10 +76,12 @@ object DataImpl {
   }
 
   def expand(clazz: Defn.Class,
-             dataMods: Map[String, Boolean]): Term.Block = {
+             dataMods: Map[String, Boolean],
+             extraParams: ExtraParams): Term.Block = {
     clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
-        val dataInfo = extractDataInfo(name, ctor, tparams, dataMods)
+        val dataInfo = extractDataInfo(name, ctor, tparams, dataMods, extraParams)
+        validateDataInfo(dataInfo)
 
         val modsToBuilders = Seq(
           "product" -> Seq(DataProductMethodsBuilder),
@@ -80,6 +94,9 @@ object DataImpl {
             DataShapelessBaseBuilder,
             DataShapelessTypeableBuilder,
             DataShapelessGenericsBuilder
+          ),
+          "memoise" -> Seq(
+            DataMemoiseBuilder
           )
         )
 
@@ -97,7 +114,7 @@ object DataImpl {
 
         val newClass = buildClass(dataInfo, builders.toList)
         val newObject = buildObject(dataInfo, builders.toList)
-        println((newClass, newObject).toString())
+        //println((newClass, newObject).toString())
 
         Term.Block(Seq(
           newClass,
@@ -111,25 +128,32 @@ object DataImpl {
 
 class data(product: Boolean,
            serializable: Boolean,
-           shapeless: Boolean) extends scala.annotation.StaticAnnotation {
+           shapeless: Boolean,
+           memoiseRefs: scala.Seq[scala.Symbol]) extends scala.annotation.StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
-    println(this.structure)
+    val (dataMods, extraParams) = this match {
+      case q"new data(..$args)" =>
+        //println(args.map(_.structure))
+        val mods = args.flatMap {
+          case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) => Some(name -> b)
+          case _ => None
+        }.toMap[String, Boolean]
 
-    val dataMods: Map[String, Boolean] = this match {
-      case q"new data(..$args)" => args.flatMap {
-        case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) => Some(name -> b)
-        case _ => None
-      }.toMap
-      case _ => Map.empty
+        val memoiseRefs = args.collect {
+          case Term.Arg.Named(Term.Name("memoiseRefs"), Term.Apply(Term.Name("Seq"), symbols)) => symbols.collect {
+            case q"scala.Symbol(${Lit.String(sym)})" => sym
+          }
+        }.headOption.getOrElse(Seq())
+
+        (mods, ExtraParams(memoiseRefs))
+      case _ => (Map.empty[String, Boolean], ExtraParams())
     }
-
-    println(dataMods)
 
     defn match {
       case Term.Block(Seq(cls@Defn.Class(Seq(), name, Seq(), ctor, tmpl), companion: Defn.Object)) =>
         abort("@data block")
-      case clazz: Defn.Class => DataImpl.expand(clazz, dataMods)
+      case clazz: Defn.Class => DataImpl.expand(clazz, dataMods, extraParams)
     }
   }
 }

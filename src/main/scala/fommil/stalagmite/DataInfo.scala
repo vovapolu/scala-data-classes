@@ -4,11 +4,14 @@ import scala.collection.immutable.Seq
 import scala.meta._
 
 object DataInfo {
+  case class ExtraParams(memoiseRefs: Seq[String] = Seq())
+
   case class DataInfo(
     name: Type.Name,
     classParams: Seq[Term.Param],
     typeParams: Seq[Type.Param],
-    dataMods: Map[String, Boolean]
+    dataMods: Map[String, Boolean],
+    extraParams: ExtraParams = ExtraParams()
   ) {
     lazy val simpleTypeParams = typeParams.map(
       tparam => tparam.copy(mods = Seq(), tbounds = Type.Bounds(None, None))

@@ -28,8 +28,8 @@ class A[T](i: Int, b: Boolean, t: T)
     import _root_.scala.Predef._
 
     def apply[T](i: Int, b: Boolean, t: T): A[T] = {
-      val newVal = new A(i, b, t)
-      newVal.synchronized(newVal)
+      val created = new A(i, b, t)
+      created.synchronized(created)
     }
 
     def unapply[T](that: A[T]): Option[(Int, Boolean, T)] = Some((that.i, that.b, that.t))

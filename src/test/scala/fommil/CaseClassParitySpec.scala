@@ -1,5 +1,8 @@
 package fommil
 
+import testing.caseclass._
+import testing.meta._
+
 import _root_.scala._
 import _root_.scala.Predef._
 
@@ -8,8 +11,7 @@ import java.io._
 import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
-import testing.caseclass._
-import testing.meta._
+
 import shapeless._
 
 class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {

@@ -54,8 +54,8 @@ class A(a: Boolean, s: String = "a")
     import _root_.scala.Predef._
 
     def apply(a: Boolean, s: String = "a"): A = {
-      val newVal = new A(a, s)
-      newVal.synchronized(newVal)
+      val created = new A(a, s)
+      created.synchronized(created)
     }
 
     def unapply(that: A): Option[(Boolean, String)] = Some((that.a, that.s))
