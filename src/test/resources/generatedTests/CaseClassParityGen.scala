@@ -16,7 +16,7 @@ class A(a: Boolean, s: String = "a")
         false
     }
 
-    override def hashCode(): Int = a.hashCode + 13 * s.hashCode
+    override def hashCode: Int = a.hashCode + 13 * s.hashCode
     override def toString: String = "A(" + (a.toString + "," + s.toString) + ")"
 
     def copy(a: Boolean = this.a, s: String = this.s): A = A(a, s)

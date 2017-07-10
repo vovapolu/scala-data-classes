@@ -67,25 +67,25 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
   private[this] def readResolve(raw: Foo.type): Any = Foo
 
   // this wrapper is only needed when memoiseStrong=true (to force value equality)
-  private class FooWithValueEquality[T, U](val f: Foo) {
+  private class FooWithValueEquality(val f: Foo) {
     override def toString: String = f.toString
     override def hashCode: Int = f.hashCode
     override def equals(o: Any): Boolean = o match {
       // only use the hashCode shortcut if memoiseHashCode=true
-      case that: FooWithValueEquality[_, _] if hashCode == that.hashCode => f.a == that.f.a && f.s == that.f.s
+      case that: FooWithValueEquality if hashCode == that.hashCode => f.a == that.f.a && f.s == that.f.s
       case _ => false
     }
   }
 
   // memoiseStrong = true, so use a StrongInterner. Shame there is no SoftInterner
-  private[this] val memoised_cache = com.google.common.collect.Interners.newWeakInterner[FooWithValueEquality[_, _]]()
+  private[this] val memoised_cache = com.google.common.collect.Interners.newStrongInterner[FooWithValueEquality]()
   private[this] val memoisedRef_cache = com.google.common.collect.Interners.newStrongInterner[AnyRef]()
   def apply(a: Boolean, s: String): Foo = {
     // special case available for String.intern with memoizeStringsIntern=true
     val s_memoised = memoisedRef_cache.intern(s).asInstanceOf[String]
     val created = new Foo(a, s_memoised)
     val safe = created.synchronized(created) // safe publish vars
-    memoised_cache.intern(new FooWithValueEquality[String, String](safe)).f
+    memoised_cache.intern(new FooWithValueEquality(safe)).f
   }
   def unapply(f: Foo): Option[(Boolean, String)] = Some((f.a, f.s))
 

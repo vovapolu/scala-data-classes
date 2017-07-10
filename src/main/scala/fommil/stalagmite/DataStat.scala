@@ -37,10 +37,12 @@ object DataStat {
             })
 
           val interning = if (dataInfo.getMod("memoiseStrong")) {
-            q"""memoised_cache.intern(
-                  new ${Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")}[..${dataInfo.typeParamsNames}](safe)
-                ).d
-              """
+            val wrapperCreating = if (dataInfo.typeParams.nonEmpty) {
+              q"new ${Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")}[..${dataInfo.typeParamsNames}](safe)"
+            } else {
+              q"new ${Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")}(safe)"
+            }
+            q"memoised_cache.intern($wrapperCreating).d"
           } else {
             q"memoised_cache.intern(safe)"
           }
@@ -154,9 +156,9 @@ object DataStat {
 
       Seq(
         if (dataInfo.getMod("memoiseHashCode")) {
-          q"override val hashCode(): Int = $hashCodeExpr"
+          q"override val hashCode: Int = $hashCodeExpr"
         } else {
-          q"override def hashCode(): Int = $hashCodeExpr"
+          q"override def hashCode: Int = $hashCodeExpr"
         }
       )
     }
@@ -360,20 +362,29 @@ object DataStat {
         q"${Lit.String(dataInfo.name.value + "[")} + $targs + ${Lit.String("]")}"
       }
 
-      Seq(q"""
-        implicit def $typeableName[..${dataInfo.simpleTypeParams}]
-        (..$implicitTypeables): Typeable[${dataInfo.dataType}] =
-          new Typeable[${dataInfo.dataType}] {
-            override def cast(t: Any): Option[${dataInfo.dataType}] = {
-              ..$typeCases
-              t match {
-                case f @ $dataWithTypeCases => Some(${dataInfo.dataCreating})
-                case _                      => None
-              }
-            }
-            override def describe: String = $describe
-          }
-        """)
+      val typeableBody =
+        q"""
+           new Typeable[${dataInfo.dataType}] {
+             override def cast(t: Any): Option[${dataInfo.dataType}] = {
+               ..$typeCases
+               t match {
+                 case f @ $dataWithTypeCases => Some(${dataInfo.dataCreating})
+                 case _                      => None
+               }
+             }
+             override def describe: String = $describe
+           }
+          """
+
+      if (implicitTypeables.nonEmpty) {
+        Seq(q"""
+          implicit def $typeableName[..${dataInfo.simpleTypeParams}]
+            (..$implicitTypeables): Typeable[${dataInfo.dataType}] = $typeableBody
+          """)
+      } else {
+        Seq(q"""
+          implicit def $typeableName[..${dataInfo.simpleTypeParams}]: Typeable[${dataInfo.dataType}] = $typeableBody""")
+      }
     }
   }
 

@@ -18,7 +18,7 @@ class A[T](a: Boolean, s: String, t: T)
         false
     }
 
-    override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
+    override def hashCode: Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
     override def toString: String = "A(" + (a.toString + "," + s.toString + "," + t.toString) + ")"
 
     def copy[N$T >: T](a: Boolean = this.a, s: String = this.s, t: N$T = this.t): A[N$T] = A(a, s, t)

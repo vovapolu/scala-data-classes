@@ -126,10 +126,14 @@ object DataImpl {
   }
 }
 
-class data(product: Boolean,
-           serializable: Boolean,
-           shapeless: Boolean,
-           memoiseRefs: scala.Seq[scala.Symbol]) extends scala.annotation.StaticAnnotation {
+class data(product: Boolean = false,
+           serializable: Boolean = false,
+           shapeless: Boolean = false,
+           memoise: Boolean = false,
+           memoiseHashCode: Boolean = false,
+           memoiseToString: Boolean = false,
+           memoiseStrong: Boolean = false,
+           memoiseRefs: scala.Seq[scala.Symbol] = scala.Seq()) extends scala.annotation.StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
     val (dataMods, extraParams) = this match {
