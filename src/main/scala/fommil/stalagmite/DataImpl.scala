@@ -10,13 +10,33 @@ object DataImpl {
   import DataInfo._
   import DataStat._
 
-  def validateCtor(ctor: Ctor.Primary) = {
+  def validateClass(ctor: Ctor.Primary, tmpl: Template, tparams: Seq[Type.Param]) = {
     if (ctor.paramss.length > 1) {
       abort("Current implementation doesn't support curried class definitions")
     }
 
     if (ctor.paramss.flatten.exists(param => param.mods.exists(_ != Mod.ValParam()))) {
-      abort("Invalid constructor!")
+      abort("Fields should be only vals, without modifiers")
+    }
+
+    if (ctor.mods.nonEmpty) {
+      abort("Current implementation doesn't support constructor params")
+    }
+
+    if (tmpl.early.nonEmpty) {
+      abort("Current implementation doesn't support early initialization")
+    }
+
+    if (tmpl.parents.nonEmpty) {
+      abort("Current implementation doesn't support inheritance")
+    }
+
+    if (!tmpl.self.name.isInstanceOf[Name.Anonymous]) {
+      abort("Current implementation doesn't support self type")
+    }
+
+    if (tmpl.stats.map(_.length).getOrElse(0) != 0) {
+      abort("Current implementation doesn't support statements in class body")
     }
   }
 
@@ -27,15 +47,6 @@ object DataImpl {
       if (!dataInfo.classParamNames.map(_.value).contains(ref))
         abort(s"""There's no field called $ref""")
     }
-  }
-
-  def extractDataInfo(name: Type.Name,
-                      ctor: Ctor.Primary,
-                      tparams: Seq[Type.Param],
-                      dataMods: Map[String, Boolean],
-                      extraParams: ExtraParams): DataInfo = {
-    validateCtor(ctor)
-    DataInfo(name, ctor.paramss.flatten, tparams, dataMods, extraParams)
   }
 
   def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
@@ -80,7 +91,9 @@ object DataImpl {
              extraParams: ExtraParams): Term.Block = {
     clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
-        val dataInfo = extractDataInfo(name, ctor, tparams, dataMods, extraParams)
+        println(cls.structure)
+        validateClass(ctor, tmpl, tparams)
+        val dataInfo = DataInfo(name, ctor.paramss.flatten, tparams, dataMods, extraParams)
         validateDataInfo(dataInfo)
 
         val modsToBuilders = Seq(

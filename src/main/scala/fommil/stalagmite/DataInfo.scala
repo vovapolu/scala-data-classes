@@ -25,10 +25,6 @@ object DataInfo {
       case _               => abort("Currently complicated Type.Args aren't supported")
     })
 
-    //    lazy val classTypeNames = classParams.map(_.decltpe match {
-    //      case Some(tpe: Type.Name) => tpe
-    //      case _                    => abort("Currently only Type.Name as field type is supported")
-    //    })
     lazy val classParamNames = classParams.map(param => Term.Name(param.name.value))
     lazy val classParamsWithTypes = classParamNames.zip(classParamsTypes)
 
