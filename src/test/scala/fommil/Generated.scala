@@ -58,11 +58,11 @@ class Generated extends FlatSpec with ParallelTestExecution {
 
   "@data-generated class" should "have case-class methods" in {
     checkGenFile("CaseClassParityGen")
-    checkGenFile("CaseClassTypedParityGen")
+    checkGenFile("CaseClassTypedParityGen", true)
   }
 
   "@data-generated class with memoising" should "have cache, corresponding apply method" in {
-    checkGenFile("MemoisedGen", true)
-    checkGenFile("StronglyMemoisedGen", true)
+    checkGenFile("MemoisedGen")
+    checkGenFile("StronglyMemoisedGen")
   }
 }

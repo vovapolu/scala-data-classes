@@ -1,15 +1,15 @@
 //product serializable shapeless
-class A[T](a: Boolean, s: String, t: T)
+class A[T](a: Boolean, s: String, t: Option[T])
 //---
 {
-  final class A[T] private(private[this] var _a: Boolean, private[this] var _s: String, private[this] var _t: T) extends _root_.scala.Product with _root_.scala.Serializable {
+  final class A[T] private(private[this] var _a: Boolean, private[this] var _s: String, private[this] var _t: Option[T]) extends _root_.scala.Product with _root_.scala.Serializable {
 
     import _root_.scala._
     import _root_.scala.Predef._
 
     def a: Boolean = this._a
     def s: String = this._s
-    def t: T = this._t
+    def t: Option[T] = this._t
 
     override def equals(thatAny: Any): Boolean = thatAny match {
       case that: A[_] =>
@@ -21,7 +21,7 @@ class A[T](a: Boolean, s: String, t: T)
     override def hashCode: Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
     override def toString: String = "A(" + (a.toString + "," + s.toString + "," + t.toString) + ")"
 
-    def copy[N$T >: T](a: Boolean = this.a, s: String = this.s, t: N$T = this.t): A[N$T] = A(a, s, t)
+    def copy[T](a: Boolean = this.a, s: String = this.s, t: Option[T] = this.t): A[T] = A(a, s, t)
 
     def canEqual(that: Any): Boolean = that.isInstanceOf[A[T]]
 
@@ -52,7 +52,7 @@ class A[T](a: Boolean, s: String, t: T)
     Unit = {
       _a = in.readBoolean()
       _s = in.readUTF()
-      _t = in.readObject().asInstanceOf[T]
+      _t = in.readObject().asInstanceOf[Option[T]]
     }
 
     @throws[_root_.java.io.ObjectStreamException]
@@ -64,12 +64,12 @@ class A[T](a: Boolean, s: String, t: T)
     import _root_.scala._
     import _root_.scala.Predef._
 
-    def apply[T](a: Boolean, s: String, t: T): A[T] = {
+    def apply[T](a: Boolean, s: String, t: Option[T]): A[T] = {
       val created = new A(a, s, t)
       created.synchronized(created)
     }
 
-    def unapply[T](that: A[T]): Option[(Boolean, String, T)] = Some((that.a, that.s, that.t))
+    def unapply[T](that: A[T]): Option[(Boolean, String, Option[T])] = Some((that.a, that.s, that.t))
 
     override def toString: String = "A"
 
@@ -91,22 +91,22 @@ class A[T](a: Boolean, s: String, t: T)
     val s_tpe = Symbol("s").narrow
     val t_tpe = Symbol("t").narrow
 
-    implicit def TypeableA[T](implicit TT: Typeable[T]): Typeable[A[T]] = new Typeable[A[T]] {
+    implicit def TypeableA[T](implicit `TOption[T]`: Typeable[Option[T]]): Typeable[A[T]] = new Typeable[A[T]] {
       override def cast(t: Any): Option[A[T]] = {
-        val TC_T = TypeCase[T]
+        val `TC_Option[T]` = TypeCase[Option[T]]
         t match {
-          case f@A(a, s, TC_T(t)) =>
+          case f@A(a, s, `TC_Option[T]`(t)) =>
             Some(A(a, s, t))
           case _ =>
             None
         }
       }
 
-      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + TT.describe) + "]"
+      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + `TOption[T]`.describe) + "]"
     }
 
-    implicit def GenericA[T]: Generic.Aux[A[T], Boolean :: String :: T :: HNil] = new Generic[A[T]] {
-      override type Repr = Boolean :: String :: T :: HNil
+    implicit def GenericA[T]: Generic.Aux[A[T], Boolean :: String :: Option[T] :: HNil] = new Generic[A[T]] {
+      override type Repr = Boolean :: String :: Option[T] :: HNil
 
       override def to(f: A[T]): Repr = LabelledGenericA[T].to(f)
 
@@ -116,8 +116,8 @@ class A[T](a: Boolean, s: String, t: T)
       }
     }
 
-    implicit def LabelledGenericA[T]: LabelledGeneric.Aux[A[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: HNil] = new LabelledGeneric[A[T]] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: HNil
+    implicit def LabelledGenericA[T]: LabelledGeneric.Aux[A[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, Option[T]] :: HNil] = new LabelledGeneric[A[T]] {
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, Option[T]] :: HNil
 
       override def to(f: A[T]): Repr = field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: field[t_tpe.type](f.t) :: HNil
 

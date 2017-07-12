@@ -127,6 +127,7 @@ object DataImpl {
 }
 
 class data(product: Boolean = false,
+           checkSerializable: Boolean = false,
            serializable: Boolean = false,
            shapeless: Boolean = false,
            memoise: Boolean = false,
