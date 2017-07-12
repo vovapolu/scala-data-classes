@@ -1,30 +1,28 @@
 //product serializable shapeless
-class A[T](a: Boolean, s: String, t: Option[T])
+class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
 //---
 {
-  final class A[T] private(private[this] var _a: Boolean, private[this] var _s: String, private[this] var _t: Option[T]) extends _root_.scala.Product with _root_.scala.Serializable {
-
+  final class A[X, Y] private (private[this] var _a: Boolean, private[this] var _s: String, private[this] var _xy: Either[X, Option[Y]]) extends _root_.scala.Product with _root_.scala.Serializable {
     import _root_.scala._
     import _root_.scala.Predef._
 
     def a: Boolean = this._a
     def s: String = this._s
-    def t: Option[T] = this._t
+    def xy: Either[X, Option[Y]] = this._xy
 
     override def equals(thatAny: Any): Boolean = thatAny match {
-      case that: A[_] =>
-        (this eq that) || that.a == this.a && that.s == this.s && that.t == this.t
+      case that: A[_, _] =>
+        (this eq that) || that.a == this.a && that.s == this.s && that.xy == this.xy
       case _ =>
         false
     }
 
-    override def hashCode: Int = a.hashCode + 13 * (s.hashCode + 13 * t.hashCode)
-    override def toString: String = "A(" + (a.toString + "," + s.toString + "," + t.toString) + ")"
+    override def hashCode: Int = a.hashCode + 13 * (s.hashCode + 13 * xy.hashCode)
+    override def toString: String = "A(" + (a.toString + "," + s.toString + "," + xy.toString) + ")"
 
-    def copy[T](a: Boolean = this.a, s: String = this.s, t: Option[T] = this.t): A[T] = A(a, s, t)
+    def copy[X, Y](a: Boolean = this.a, s: String = this.s, xy: Either[X, Option[Y]] = this.xy): A[X, Y] = A(a, s, xy)
 
-    def canEqual(that: Any): Boolean = that.isInstanceOf[A[T]]
-
+    def canEqual(that: Any): Boolean = that.isInstanceOf[A[X, Y]]
     def productArity: Int = 3
     def productElement(n: Int): Any = n match {
       case 0 =>
@@ -32,7 +30,7 @@ class A[T](a: Boolean, s: String, t: Option[T])
       case 1 =>
         this.s
       case 2 =>
-        this.t
+        this.xy
       case _ =>
         throw new IndexOutOfBoundsException(n.toString())
     }
@@ -43,85 +41,75 @@ class A[T](a: Boolean, s: String, t: Option[T])
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
       out.writeBoolean(a)
       out.writeUTF(s)
-      out.writeObject(t)
+      out.writeObject(xy)
     }
-
     @throws[_root_.java.io.IOException]
     @throws[_root_.java.lang.ClassNotFoundException]
-    private[this] def readObject(in: java.io.ObjectInputStream):
-    Unit = {
+    private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
       _a = in.readBoolean()
       _s = in.readUTF()
-      _t = in.readObject().asInstanceOf[Option[T]]
+      _xy = in.readObject().asInstanceOf[Either[X, Option[Y]]]
     }
 
     @throws[_root_.java.io.ObjectStreamException]
-    private[this] def readResolve(): Any = A(a, s, t)
+    private[this] def readResolve(): Any = A(a, s, xy)
   }
 
   object A extends _root_.scala.Serializable {
-
     import _root_.scala._
     import _root_.scala.Predef._
 
-    def apply[T](a: Boolean, s: String, t: Option[T]): A[T] = {
-      val created = new A(a, s, t)
+    def apply[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]]): A[X, Y] = {
+      val created = new A(a, s, xy)
       created.synchronized(created)
     }
 
-    def unapply[T](that: A[T]): Option[(Boolean, String, Option[T])] = Some((that.a, that.s, that.t))
+    def unapply[X, Y](that: A[X, Y]): Option[(Boolean, String, Either[X, Option[Y]])] = Some((that.a, that.s, that.xy))
 
     override def toString: String = "A"
 
     @throws[_root_.java.io.IOException]
     private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
-
     @throws[_root_.java.io.IOException]
     @throws[_root_.java.lang.ClassNotFoundException]
     private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
-
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A
 
-    import _root_.shapeless.{::, HNil, Generic, LabelledGeneric, Typeable, TypeCase}
-    import _root_.shapeless.labelled.{FieldType, field}
+    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable, TypeCase }
+    import _root_.shapeless.labelled.{ FieldType, field }
     import _root_.shapeless.syntax.singleton._
 
     val a_tpe = Symbol("a").narrow
     val s_tpe = Symbol("s").narrow
-    val t_tpe = Symbol("t").narrow
+    val xy_tpe = Symbol("xy").narrow
 
-    implicit def TypeableA[T](implicit `TOption[T]`: Typeable[Option[T]]): Typeable[A[T]] = new Typeable[A[T]] {
-      override def cast(t: Any): Option[A[T]] = {
-        val `TC_Option[T]` = TypeCase[Option[T]]
+    implicit def TypeableA[X, Y](implicit `TEither[X, Option[Y]]`: Typeable[Either[X, Option[Y]]]): Typeable[A[X, Y]] = new Typeable[A[X, Y]] {
+      override def cast(t: Any): Option[A[X, Y]] = {
+        val `TC_Either[X, Option[Y]]` = TypeCase[Either[X, Option[Y]]]
         t match {
-          case f@A(a, s, `TC_Option[T]`(t)) =>
-            Some(A(a, s, t))
+          case f @ A(a, s, `TC_Either[X, Option[Y]]`(xy)) =>
+            Some(A(a, s, xy))
           case _ =>
             None
         }
       }
-
-      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + `TOption[T]`.describe) + "]"
+      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + `TEither[X, Option[Y]]`.describe) + "]"
     }
 
-    implicit def GenericA[T]: Generic.Aux[A[T], Boolean :: String :: Option[T] :: HNil] = new Generic[A[T]] {
-      override type Repr = Boolean :: String :: Option[T] :: HNil
-
-      override def to(f: A[T]): Repr = LabelledGenericA[T].to(f)
-
-      override def from(r: Repr): A[T] = r match {
-        case a :: s :: t :: HNil =>
-          A(a, s, t)
+    implicit def GenericA[X, Y]: Generic.Aux[A[X, Y], Boolean :: String :: Either[X, Option[Y]] :: HNil] = new Generic[A[X, Y]] {
+      override type Repr = Boolean :: String :: Either[X, Option[Y]] :: HNil
+      override def to(f: A[X, Y]): Repr = LabelledGenericA[X, Y].to(f)
+      override def from(r: Repr): A[X, Y] = r match {
+        case a :: s :: xy :: HNil =>
+          A(a, s, xy)
       }
     }
 
-    implicit def LabelledGenericA[T]: LabelledGeneric.Aux[A[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, Option[T]] :: HNil] = new LabelledGeneric[A[T]] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, Option[T]] :: HNil
-
-      override def to(f: A[T]): Repr = field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: field[t_tpe.type](f.t) :: HNil
-
-      override def from(r: Repr): A[T] = GenericA[T].from(r)
+    implicit def LabelledGenericA[X, Y]: LabelledGeneric.Aux[A[X, Y], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[xy_tpe.type, Either[X, Option[Y]]] :: HNil] = new LabelledGeneric[A[X, Y]] {
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[xy_tpe.type, Either[X, Option[Y]]] :: HNil
+      override def to(f: A[X, Y]): Repr = field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: field[xy_tpe.type](f.xy) :: HNil
+      override def from(r: Repr): A[X, Y] = GenericA[X, Y].from(r)
     }
   }
 }

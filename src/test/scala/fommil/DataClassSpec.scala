@@ -9,7 +9,7 @@ import org.scalatest.Matchers._
 import fommil.stalagmite.data
 
 class DataClassSpec extends FlatSpec with ParallelTestExecution {
-  "@data class" should "be class without methods, modifiers and var params" in {
+  "@data class" should "be defined without methods, modifiers and var params" in {
     """@data class A(a: Int)""" should compile
     """@data class A(a: Int = 1)""" should compile
     """@data class A(a: Int = 1, b: Int)""" should compile
@@ -38,5 +38,15 @@ class DataClassSpec extends FlatSpec with ParallelTestExecution {
     """@data class A(a: Int) extends B""" shouldNot compile
     //"""@data class A(a: Int) extends { val b = 1 } with B""" shouldNot compile
     """@data class A(a: Int) { notThis => }""" shouldNot compile
+  }
+
+  it should "have correct field types" in {
+    """@data class A(a: Int)""" should compile
+    """@data class A(a: Option[Int])""" should compile
+    """@data class A(a: Option[Either[String, List[Int]]])""" should compile
+    """@data class A[X, Y](a: Option[Either[X, List[Y]]])""" should compile
+
+    """@data class A(a:=> Int)""" shouldNot compile
+    """@data class A(a: Int*)""" shouldNot compile
   }
 }

@@ -91,7 +91,6 @@ object DataImpl {
              extraParams: ExtraParams): Term.Block = {
     clazz match {
       case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
-        println(cls.structure)
         validateClass(ctor, tmpl, tparams)
         val dataInfo = DataInfo(name, ctor.paramss.flatten, tparams, dataMods, extraParams)
         validateDataInfo(dataInfo)
