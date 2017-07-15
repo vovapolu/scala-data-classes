@@ -46,7 +46,7 @@ class DataClassSpec extends FlatSpec with ParallelTestExecution {
     """@data class A(a: Option[Either[String, List[Int]]])""" should compile
     """@data class A[X, Y](a: Option[Either[X, List[Y]]])""" should compile
 
-    """@data class A(a:=> Int)""" shouldNot compile
+    """@data class A(a: => Int)""" shouldNot compile
     """@data class A(a: Int*)""" shouldNot compile
   }
 }

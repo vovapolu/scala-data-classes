@@ -73,7 +73,12 @@ object DataImpl {
   def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
     val modsToClasses = Seq(
       "serializable" -> ctor"_root_.scala.Serializable"
-    )
+    ) ++ (if (dataInfo.typeParams.isEmpty) {
+      Seq("companionExtends" -> ctor"((..${dataInfo.classParamsTypes}) => ${dataInfo.dataType})")
+    } else {
+      Seq()
+    })
+
     val extendsClasses = modsToClasses.collect {
       case (mod, ctor) if dataInfo.getMod(mod) => ctor
     }

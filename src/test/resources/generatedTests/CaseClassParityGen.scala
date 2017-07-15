@@ -1,4 +1,4 @@
-//product serializable shapeless
+//product serializable shapeless companionExtends
 class A(a: Boolean, s: String = "a", o: Option[Double])
 //---
 {
@@ -54,7 +54,7 @@ class A(a: Boolean, s: String = "a", o: Option[Double])
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A(a, s, o)
   }
-  object A extends _root_.scala.Serializable {
+  object A extends _root_.scala.Serializable with ((Boolean, String, Option[Double]) => A) {
     import _root_.scala._
     import _root_.scala.Predef._
 
