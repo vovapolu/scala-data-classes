@@ -1,4 +1,4 @@
-package fommil
+package stalagmite
 
 import testing.caseclass._
 import testing.meta._

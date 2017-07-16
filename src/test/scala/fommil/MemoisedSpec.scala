@@ -1,4 +1,4 @@
-package fommil
+package stalagmite
 
 import testing.memoised._
 import testing.meta._

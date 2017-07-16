@@ -1,10 +1,10 @@
-`@data` classes a la carte in Scala.
+![data and codata](https://pbs.twimg.com/media/C4puwPsVUAAPPW5.jpg)
 
-**STATUS: currently specifying, not implemented yet. If you're a student, please see the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta) page and apply!**
+**STATUS: currently implementing, not released yet. This project is sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta)**
 
-An alternative to `case class` giving much more control over the internal representation of a data class.
+An alternative to `case class` and extensions for `sealed trait` giving much more control over the internal representation of ADTs for [Functional Programming in Scala](https://leanpub.com/fp-scala-mortals) style.
 
-The following features are currently being considered in [`src/test/scala/testing`](https://github.com/fommil/scala-data-classes/tree/master/src/test/scala/testing). If you have any further ideas, please comment on the issue tracker:
+The following features are currently being considered in [`src/test/scala/testing`](https://github.com/fommil/stalagmite/tree/master/src/test/scala/testing). If you have any further ideas, please comment on the issue tracker:
 
 ## `final case class` parity
 
@@ -21,7 +21,7 @@ final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)
 
 Extending `trait` / `interface` is allowed, but extending `class` / `abstract class` is forbidden.
 
-User-defined methods and fields are being debated in [#5](https://github.com/fommil/scala-data-classes/issues/5).
+User-defined methods and fields are being debated in [#5](https://github.com/fommil/stalagmite/issues/5).
 
 - `product` (i.e. implementing `Product`) will be disabled by default because it encourages runtime inspection instead of compiletime safety.
 - `checkSerializable` (i.e. checking all parameters for `Serializable`) will be enabled by default because this is the sort of thing that should be checked at compiletime.
@@ -49,7 +49,7 @@ The following features are independent, but can be combined:
 - `memoiseToString` stores the `toString` in a `val` (at the cost of initialisation and heap)
 - `memoiseStrong` weak by default, means your instances are never garbage collected and `equals` is identity based (extreme caution!)
 
-Further ideas for memoisation should go in [#6](https://github.com/fommil/scala-data-classes/issues/6)
+Further ideas for memoisation should go in [#6](https://github.com/fommil/stalagmite/issues/6)
 
 ### Implementation Note
 
@@ -60,7 +60,7 @@ It is not possible to write a cache on the JVM whose contents are garbage collec
 
 Value and identity equivalence can only be guaranteed if a strong reference cache is used. The JVM would have to offer native support or GC hooks for this to work.
 
-See [#8](https://github.com/fommil/scala-data-classes/issues/8) for a way of speeding up `equals` for instances with value equality (but not reference equality), at the cost of even more heap.
+See [#8](https://github.com/fommil/stalagmite/issues/8) for a way of speeding up `equals` for instances with value equality (but not reference equality), at the cost of even more heap.
 
 We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we really want is a `SoftReference` interner that uses a custom `Equality`.
 
@@ -79,4 +79,4 @@ For this example: 3 `Option` wrappers, `Boolean` boxing, `Boolean` packing, `Str
 
 Note that changing the heap representation does not affect the serialised form (the public visible fields are used).
 
-Further ideas for heap optimisation should go in [#3](https://github.com/fommil/scala-data-classes/issues/3)
+Further ideas for heap optimisation should go in [#3](https://github.com/fommil/stalagmite/issues/3)
