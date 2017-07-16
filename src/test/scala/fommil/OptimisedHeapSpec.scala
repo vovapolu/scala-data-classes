@@ -1,5 +1,10 @@
 package stalagmite
 
+import testing.optimiseheap._
+
+import _root_.scala._
+import _root_.scala.Predef._
+
 import java.io._
 
 import org.scalatest._
@@ -7,7 +12,7 @@ import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalactic.anyvals.PosInt
-import testing.optimiseheap._
+
 import shapeless._
 
 class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with GeneratorDrivenPropertyChecks {
