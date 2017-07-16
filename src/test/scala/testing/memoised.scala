@@ -26,7 +26,7 @@ final class Foo private (
   // allows the user to re-memoise if the Interner was flushed. Only
   // generated if memoise = true & memoiseStrong = false. Called
   // .intern because there is precedent with String.intern
-  // def intern: Foo = Foo(a, s) FIXME memoise && !memoiseStrong is false, is it right?
+  // def intern: Foo = Foo(a, s) memoise && !memoiseStrong is false, is it right?
 
   override val toString: String = s"Foo($a,$s)"
   override val hashCode: Int    = a.hashCode + 13 * s.hashCode

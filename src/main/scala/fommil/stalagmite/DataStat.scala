@@ -335,7 +335,7 @@ object DataStat {
           case tname: Type.Name =>
             dataInfo.typeParams.map(_.name.value).contains(tname.value)
           case _ =>
-            true // FIXME there are more cases, but it's working with basic types at least
+            true // there are more cases, but it's working with basic types at least
         }
 
       val distinctClassParamsTypes = Seq(
