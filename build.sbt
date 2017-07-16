@@ -41,3 +41,24 @@ addCommandAlias("fmt", ";sbt:scalafmt ;scalafmt ;test:scalafmt")
 
 // WORKAROUND https://github.com/scalameta/paradise/issues/10
 scalacOptions in (Compile, console) ~= (_ filterNot (_ contains "paradise"))
+
+wartremoverWarnings in (Compile, compile) := Seq(
+  Wart.AsInstanceOf,
+  Wart.EitherProjectionPartial,
+  Wart.IsInstanceOf,
+  Wart.TraversableOps,
+  Wart.NonUnitStatements,
+  Wart.Null,
+  Wart.OptionPartial,
+  Wart.Product,
+  Wart.Return,
+  Wart.Serializable,
+  Wart.StringPlusAny,
+  Wart.Throw,
+  Wart.TryPartial,
+  Wart.Var,
+  Wart.FinalCaseClass,
+  Wart.ExplicitImplicitTypes
+)
+wartremoverWarnings in (Test, compile) := (wartremoverWarnings in (Compile, compile)).value
+  .filterNot(_ == Wart.NonUnitStatements)
