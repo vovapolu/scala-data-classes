@@ -15,7 +15,7 @@ import shapeless._
 // intentionally parallel to try and flush out concurrency issues
 class MemoisedSpec extends FlatSpec with ParallelTestExecution {
 
-  val foo = Foo(true, "hello")
+  val foo     = Foo(true, "hello")
   val fooMeta = FooMetaMemoised(true, "hello")
 
   "@data(memoised) class Foo" should "have equals, hashCode and toString defined" in {
@@ -39,8 +39,12 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
   }
 
   it should "have a copy method" in {
-    fooMeta.copy(a = false) should be theSameInstanceAs (FooMetaMemoised(false, "hello"))
-    fooMeta.copy(s = "foo") should be theSameInstanceAs (FooMetaMemoised(true, "foo"))
+    fooMeta.copy(a = false) should be theSameInstanceAs (FooMetaMemoised(
+      false,
+      "hello"
+    ))
+    fooMeta.copy(s = "foo") should be theSameInstanceAs (FooMetaMemoised(true,
+                                                                         "foo"))
   }
 
   it should "have a pattern matcher" in {
@@ -49,13 +53,13 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
 
   it should "be serialisable (with memoisation holding)" in {
     val bytes_out = new ByteArrayOutputStream
-    val out = new ObjectOutputStream(bytes_out)
+    val out       = new ObjectOutputStream(bytes_out)
 
     out.writeObject(fooMeta)
     out.close()
 
     val bytes_in = new ByteArrayInputStream(bytes_out.toByteArray())
-    val in = new ObjectInputStream(bytes_in)
+    val in       = new ObjectInputStream(bytes_in)
 
     val recovered = in.readObject().asInstanceOf[FooMetaMemoised]
 
@@ -100,7 +104,10 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    (fooMeta |+| fooMeta) should be theSameInstanceAs (FooMetaMemoised(true, "hellohello"))
+    (fooMeta |+| fooMeta) should be theSameInstanceAs (FooMetaMemoised(
+      true,
+      "hellohello"
+    ))
   }
 
   // redundant, just using it becuase I am familiar with the required imports
@@ -114,7 +121,10 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
   it should "have memoised string fields" in {
     // constructing the String on the heap, so the compiler doesn't intern
     // we can't guarantee this if memoiseStrong=false (unless using string interning)
-    FooMetaMemoised(true, 1337133742.toString).s should be theSameInstanceAs FooMetaMemoised(false, 1337133742.toString).s
+    FooMetaMemoised(true, 1337133742.toString).s should be theSameInstanceAs FooMetaMemoised(
+      false,
+      1337133742.toString
+    ).s
   }
 
   it should "apply weak memoisation" in {

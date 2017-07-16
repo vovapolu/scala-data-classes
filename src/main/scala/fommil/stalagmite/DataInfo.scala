@@ -16,16 +16,22 @@ object DataInfo {
     lazy val simpleTypeParams = typeParams.map(
       tparam => tparam.copy(mods = Seq(), tbounds = Type.Bounds(None, None))
     )
-    lazy val typeParamsNames = typeParams.map(param => Type.Name(param.name.value))
-    lazy val dataType = if (typeParams.nonEmpty) t"$name[..$typeParamsNames]" else t"$name"
-    lazy val dataPatType = if (typeParams.nonEmpty) pt"$name[..${Seq.fill(typeParams.length)(pt"_")}]" else pt"$name"
+    lazy val typeParamsNames =
+      typeParams.map(param => Type.Name(param.name.value))
+    lazy val dataType =
+      if (typeParams.nonEmpty) t"$name[..$typeParamsNames]" else t"$name"
+    lazy val dataPatType =
+      if (typeParams.nonEmpty)
+        pt"$name[..${Seq.fill(typeParams.length)(pt"_")}]"
+      else pt"$name"
 
     lazy val classParamsTypes = classParams.map(_.decltpe match {
       case Some(tpe: Type) => tpe
       case _               => abort("Currently complicated Type.Args aren't supported")
     })
 
-    lazy val classParamNames = classParams.map(param => Term.Name(param.name.value))
+    lazy val classParamNames =
+      classParams.map(param => Term.Name(param.name.value))
     lazy val classParamsWithTypes = classParamNames.zip(classParamsTypes)
 
     lazy val termName = Term.Name(name.value)

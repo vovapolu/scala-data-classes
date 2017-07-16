@@ -2,7 +2,7 @@ package fommil
 
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{DataImpl, DataInfo}
+import fommil.stalagmite.{ DataImpl, DataInfo }
 import org.scalatest._
 import org.scalatest.Matchers._
 import scala.collection.immutable.Seq
@@ -13,7 +13,7 @@ import scala.meta.testkit._
 
 class Generated extends FlatSpec with ParallelTestExecution {
 
-  def assertStructurallyEqual(obtained: Tree, expected: Tree): Unit = {
+  def assertStructurallyEqual(obtained: Tree, expected: Tree): Unit =
     StructurallyEqual(obtained, expected) match {
       case Left(AnyDiff(x, y)) =>
         fail(s"""Not Structurally equal!:
@@ -22,20 +22,25 @@ class Generated extends FlatSpec with ParallelTestExecution {
              """.stripMargin)
       case _ =>
     }
-  }
 
   def checkGenFile(filename: String, printStructure: Boolean = false) = {
-    val source = io.Source.fromURL(getClass.getResource(s"/generatedTests/$filename.scala")).mkString
+    val source = io.Source
+      .fromURL(getClass.getResource(s"/generatedTests/$filename.scala"))
+      .mkString
     source.split("//---") match {
       case Array(input, target) =>
-        val inputMods = input.lines.takeWhile(_.startsWith("//")).toList
+        val inputMods   = input.lines.takeWhile(_.startsWith("//")).toList
         val booleanMods = inputMods.head.stripPrefix("//").split(" ")
         val extraMods = inputMods.tail
           .map(str => Seq(str.stripPrefix("//").split(" "): _*))
           .map(strs => strs.head -> strs.tail)
           .toMap
 
-        val inputTree = input.lines.dropWhile(_.startsWith("//")).mkString.parse[Stat].get match {
+        val inputTree = input.lines
+          .dropWhile(_.startsWith("//"))
+          .mkString
+          .parse[Stat]
+          .get match {
           case clazz: Defn.Class => clazz
           case _                 => fail("Input should be a single class")
         }

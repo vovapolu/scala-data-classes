@@ -15,7 +15,10 @@ import org.scalactic.anyvals.PosInt
 
 import shapeless._
 
-class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with GeneratorDrivenPropertyChecks {
+class OptimisedHeapSpec
+    extends FlatSpec
+    with ParallelTestExecution
+    with GeneratorDrivenPropertyChecks {
   val foo = Foo(Option(true), Option(false), Option("world"))
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -24,7 +27,9 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with Generat
   "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
     foo.hashCode shouldBe 626589729
     foo should equal(foo)
-    foo should not be theSameInstanceAs(Foo(Option(true), Option(false), Option("world")))
+    foo should not be theSameInstanceAs(
+      Foo(Option(true), Option(false), Option("world"))
+    )
     foo should not equal (Foo(Option(false), Option(false), Option("world")))
     foo.toString should equal("Foo(Some(true),Some(false),Some(world))")
     Foo.toString should equal("Foo")
@@ -52,26 +57,34 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with Generat
   }
 
   it should "have a copy method" in {
-    foo.copy(a = Option(false)) should equal(Foo(Option(false), Option(false), Option("world")))
-    foo.copy(b = Option(true)) should equal(Foo(Option(true), Option(true), Option("world")))
-    foo.copy(s = Option("foo")) should equal(Foo(Option(true), Option(false), Option("foo")))
+    foo.copy(a = Option(false)) should equal(
+      Foo(Option(false), Option(false), Option("world"))
+    )
+    foo.copy(b = Option(true)) should equal(
+      Foo(Option(true), Option(true), Option("world"))
+    )
+    foo.copy(s = Option("foo")) should equal(
+      Foo(Option(true), Option(false), Option("foo"))
+    )
   }
 
   it should "have a pattern matcher" in {
-    foo should matchPattern { case Foo(Some(true), Some(false), Some("world")) => }
+    foo should matchPattern {
+      case Foo(Some(true), Some(false), Some("world")) =>
+    }
   }
 
   it should "be serialisable" in {
     // should really check that this is using the public form, not the internal form
 
     val bytes_out = new ByteArrayOutputStream
-    val out = new ObjectOutputStream(bytes_out)
+    val out       = new ObjectOutputStream(bytes_out)
 
     out.writeObject(foo)
     out.close()
 
     val bytes_in = new ByteArrayInputStream(bytes_out.toByteArray())
-    val in = new ObjectInputStream(bytes_in)
+    val in       = new ObjectInputStream(bytes_in)
 
     val recovered = in.readObject().asInstanceOf[Foo]
 
@@ -96,7 +109,9 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with Generat
   it should "have a Typeable" in {
     val T = Typeable[Foo]
 
-    T.describe should equal("Foo[Option[Boolean],Option[Boolean],Option[String]]")
+    T.describe should equal(
+      "Foo[Option[Boolean],Option[Boolean],Option[String]]"
+    )
 
     T.cast("hello") shouldBe empty
     T.cast(1L) shouldBe empty
@@ -114,7 +129,9 @@ class OptimisedHeapSpec extends FlatSpec with ParallelTestExecution with Generat
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    (foo |+| foo) should equal(Foo(Option(true), Option(true), Option("worldworld")))
+    (foo |+| foo) should equal(
+      Foo(Option(true), Option(true), Option("worldworld"))
+    )
   }
 
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {

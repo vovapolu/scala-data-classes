@@ -12,29 +12,34 @@ final class Foo[+T] private (
   private[this] var _s: String,
   private[this] var _t: T,
   private[this] var _i: Int
-) extends scala.Serializable with scala.Product {
+) extends scala.Serializable
+    with scala.Product {
   def a: Boolean = _a
-  def s: String = _s
-  def t: T = _t
-  def i: Int = _i
+  def s: String  = _s
+  def t: T       = _t
+  def i: Int     = _i
 
-  def copy[TT](a: Boolean = a, s: String = s, t: TT = t, i: Int = i): Foo[TT] = Foo(a, s, t, i)
+  def copy[TT](a: Boolean = a, s: String = s, t: TT = t, i: Int = i): Foo[TT] =
+    Foo(a, s, t, i)
 
-  override def productPrefix = "Foo"
+  override def productPrefix     = "Foo"
   override def productArity: Int = 4
-  override def productElement(n: Int): Any = (n: @scala.annotation.switch) match {
-    case 0 => a
-    case 1 => s
-    case 2 => t
-    case 3 => i
-  }
+  override def productElement(n: Int): Any =
+    (n: @scala.annotation.switch) match {
+      case 0 => a
+      case 1 => s
+      case 2 => t
+      case 3 => i
+    }
   override def canEqual(o: Any): Boolean = o != null && o.isInstanceOf[Foo[_]]
 
   override def toString(): String = s"Foo($a,$s,$t,$i)"
-  override def hashCode(): Int = a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
+  override def hashCode(): Int =
+    a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
   override def equals(o: Any): Boolean = o match {
-    case that: Foo[_] => (this eq that) || (a == that.a && s == that.s && t == that.t && i == that.i)
-    case _            => false
+    case that: Foo[_] =>
+      (this eq that) || (a == that.a && s == that.s && t == that.t && i == that.i)
+    case _ => false
   }
 
   @throws[java.io.IOException]
@@ -76,12 +81,13 @@ final object Foo extends scala.Serializable {
     val foo = new Foo(a, s, t, i)
     foo.synchronized(foo) // safe publication (we have vars, for serialisation)
   }
-  def unapply[T](f: Foo[T]): Option[(Boolean, String, T, Int)] = Some((f.a, f.s, f.t, f.i))
+  def unapply[T](f: Foo[T]): Option[(Boolean, String, T, Int)] =
+    Some((f.a, f.s, f.t, f.i))
 
   // if there are no type parameters on the class, this can be a val
   // (*sigh* if only scala had language support for singleton symbols...)
-  import shapeless.{::, HNil, Generic, LabelledGeneric, Typeable, TypeCase}
-  import shapeless.labelled.{FieldType, field}
+  import shapeless.{ ::, Generic, HNil, LabelledGeneric, TypeCase, Typeable }
+  import shapeless.labelled.{ field, FieldType }
   import shapeless.syntax.singleton._
   // it might be possible to avoid these tagged symbols inside scala.meta
   val a_tpe = 'a.narrow
@@ -102,9 +108,16 @@ final object Foo extends scala.Serializable {
       override def describe: String = s"Foo[Boolean,String,${tt.describe},Int]"
     }
 
-  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
+  implicit def LabelledGenericFoo[T]
+    : LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[
+      s_tpe.type,
+      String
+    ] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
     new LabelledGeneric[Foo[T]] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
+      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[
+        s_tpe.type,
+        String
+      ] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
 
       override def to(f: Foo[T]): Repr =
         field[a_tpe.type](f.a) ::
@@ -116,7 +129,8 @@ final object Foo extends scala.Serializable {
       override def from(r: Repr): Foo[T] = GenericFoo.from(r)
     }
 
-  implicit def GenericFoo[T]: Generic.Aux[Foo[T], Boolean :: String :: T :: Int :: HNil] =
+  implicit def GenericFoo[T]
+    : Generic.Aux[Foo[T], Boolean :: String :: T :: Int :: HNil] =
     new Generic[Foo[T]] {
       override type Repr = Boolean :: String :: T :: Int :: HNil
       override def to(f: Foo[T]): Repr = LabelledGenericFoo[T].to(f)
