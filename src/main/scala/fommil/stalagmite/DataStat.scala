@@ -1,3 +1,5 @@
+// Copyright: 2017 https://github.com/fommil/stalagmite/graphs
+// License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite
 
 import DataInfo._
