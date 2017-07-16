@@ -15,12 +15,12 @@ lazy val macroAnnotationSettings = Seq(
 )
 
 libraryDependencies ++= Seq(
- "com.google.guava" % "guava" % "21.0" % "test",
- "org.ensime" %% "pcplod" % "1.2.0" % "test",
+ "com.google.guava" % "guava" % "22.0" % "test",
+ "org.ensime" %% "pcplod" % "1.2.1" % "test",
  "org.typelevel" %% "cats" % "0.9.0" % "test",
- "org.typelevel" %% "kittens" % "1.0.0-M9" % "test",
- "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.4" % "test",
- "com.github.fommil" %% "spray-json-shapeless" % "1.3.0" % "test",
+ "org.typelevel" %% "kittens" % "1.0.0-M10" % "test",
+ "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.6" % "test",
+ "com.github.fommil" %% "spray-json-shapeless" % "1.4.0" % "test",
  "org.scalameta" %% "testkit" % "1.8.0" % "test",
  "org.scalameta" %% "scalameta" % "1.8.0" % Provided
 ) ++ shapeless.value.map(_ % "test")

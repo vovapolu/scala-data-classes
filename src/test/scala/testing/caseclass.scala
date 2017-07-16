@@ -18,7 +18,7 @@ final class Foo[+T] private (
   def t: T = _t
   def i: Int = _i
 
-  def copy[T](a: Boolean = a, s: String = s, t: T = t, i: Int = i): Foo[T] = Foo(a, s, t, i)
+  def copy[TT](a: Boolean = a, s: String = s, t: TT = t, i: Int = i): Foo[TT] = Foo(a, s, t, i)
 
   override def productPrefix = "Foo"
   override def productArity: Int = 4

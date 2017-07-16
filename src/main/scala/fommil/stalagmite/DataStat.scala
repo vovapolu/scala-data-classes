@@ -1,6 +1,6 @@
 package fommil.stalagmite
 
-import DataInfo.DataInfo
+import DataInfo._
 
 import scala.collection.immutable.Seq
 import scala.meta._
