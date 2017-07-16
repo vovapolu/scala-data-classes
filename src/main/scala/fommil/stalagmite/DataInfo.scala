@@ -29,8 +29,61 @@ object DataInfo {
     lazy val classParamsWithTypes = classParamNames.zip(classParamsTypes)
 
     lazy val termName = Term.Name(name.value)
-
     lazy val dataCreating = q"$termName(..$classParamNames)"
+
+    case class BitPosition(optionBit: Option[Int], booleanBit: Option[Int],
+                           fieldByte: Option[Int], fieldSize: Option[Int])
+
+    lazy val bitPositions: List[BitPosition] = {
+      val tempSizes = classParamsTypes.toList.map(tpe => {
+        val (optionBit, typeWithoutOption) = tpe match {
+          case t"Option[$t]" if getMod("optimiseHeapOptions") => (1, t)
+          case t => (0, t)
+        }
+
+        val booleanBit = typeWithoutOption match {
+          case t"Boolean" if getMod("optimiseHeapBooleans") => 1
+          case _ => 0
+        }
+
+        val fieldByteSize = if (getMod("optimiseHeapPrimitives")) {
+          typeWithoutOption match {
+            case t"Byte"  => 1
+            case t"Char" => 1
+            case t"Short" => 2
+            case t"Int"  => 4
+            case t"Float"  => 4
+            case t"Long"  => 8
+            case t"Double" => 8
+            case _ => 0
+          }
+        } else {
+          0
+        }
+
+        (optionBit, booleanBit, fieldByteSize)
+      })
+
+      val booleansAndOptionsBits = tempSizes.map(s => s._1 + s._2).sum
+      val reservedBytes = booleansAndOptionsBits / 8 + (if (booleansAndOptionsBits % 8 != 0) 1 else 0)
+
+      def generateBitPosition(curSizes: List[(Int, Int, Int)], curReservedBit: Int, curByte: Int): List[BitPosition] = {
+        curSizes match {
+          case head :: tail => head match {
+            case (optionBit, booleanBit, fieldByteSize) =>
+              BitPosition(
+                if (optionBit > 0) Some(curReservedBit) else None,
+                if (booleanBit > 0) Some(curReservedBit + optionBit) else None,
+                if (fieldByteSize > 0) Some(curByte) else None,
+                if (fieldByteSize > 0) Some(fieldByteSize) else None
+              ) :: generateBitPosition(tail, curReservedBit + optionBit + booleanBit, curByte + fieldByteSize)
+          }
+          case _ => List.empty
+        }
+      }
+
+      generateBitPosition(tempSizes, 0, reservedBytes)
+    }
 
     def getMod(mod: String): Boolean = dataMods.getOrElse(mod, false)
   }
