@@ -6,16 +6,6 @@ inThisBuild(
   )
 )
 
-lazy val macroAnnotationSettings = Seq(
-  resolvers += Resolver.sonatypeRepo("releases"),
-  resolvers += Resolver.bintrayRepo("scalameta", "maven"),
-  addCompilerPlugin(
-    "org.scalameta" % "paradise" % "3.0.0-M9" cross CrossVersion.full
-  ),
-  scalacOptions += "-Xplugin-require:macroparadise",
-  scalacOptions in (Compile, console) := Seq() // macroparadise plugin doesn't work in repl yet.
-)
-
 libraryDependencies ++= Seq(
   "com.google.guava"           % "guava" % "22.0" % "test",
   "org.ensime"                 %% "pcplod" % "1.2.1" % "test",
@@ -31,8 +21,6 @@ addCompilerPlugin(
   "org.scalameta" % "paradise" % "3.0.0-M9" cross CrossVersion.full
 )
 scalacOptions += "-Xplugin-require:macroparadise"
-
-macroAnnotationSettings
 
 javaOptions in Test ++= Seq(
   s"""-Dpcplod.settings=${(scalacOptions in Test).value.mkString(",")}""",
@@ -72,6 +60,5 @@ wartremoverWarnings in (Compile, compile) := Seq(
   Wart.FinalCaseClass,
   Wart.ExplicitImplicitTypes
 )
-
 wartremoverWarnings in (Test, compile) := (wartremoverWarnings in (Compile, compile)).value
   .filterNot(_ == Wart.NonUnitStatements)
