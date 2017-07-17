@@ -15,18 +15,14 @@ import shapeless._
 // intentionally parallel to try and flush out concurrency issues
 class MemoisedSpec extends FlatSpec with ParallelTestExecution {
 
-  <<<<<<< HEAD
   val foo = Foo(true, "hello")
-  =======
-  val foo = Foo(true, "hello")
-  >>>>>>> upstream / master
   val fooMeta = FooMetaMemoised(true, "hello")
 
   "@data(memoised) class Foo" should "have equals, hashCode and toString defined" in {
     fooMeta.hashCode shouldBe 1289111417
     fooMeta should equal(fooMeta)
-    fooMeta should be theSameInstanceAs (FooMetaMemoised(true, "hello"))
-    fooMeta should not equal (FooMetaMemoised(false, "hello"))
+    fooMeta should be theSameInstanceAs FooMetaMemoised(true, "hello")
+    fooMeta should not equal FooMetaMemoised(false, "hello")
     fooMeta.toString should be theSameInstanceAs fooMeta.toString // memoiseToString
     FooMetaMemoised.toString should equal("FooMetaMemoised")
   }
@@ -43,21 +39,10 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
   }
 
   it should "have a copy method" in {
-    <<<<<<< HEAD
-      fooMeta.copy(a = false) should be theSameInstanceAs (FooMetaMemoised(
-      false,
-      "hello"
-    ))
-    fooMeta.copy(s = "foo") should be theSameInstanceAs (FooMetaMemoised(true,
-                                                                         "foo"))
-    =======
-    fooMeta.copy(a = false) should be theSameInstanceAs (FooMetaMemoised(
-      false,
-      "hello"
-    ))
-    fooMeta.copy(s = "foo") should be theSameInstanceAs (FooMetaMemoised(true,
-                                                                         "foo"))
-    >>>>>>> upstream / master
+    fooMeta.copy(a = false) should be theSameInstanceAs
+      FooMetaMemoised(false, "hello")
+    fooMeta.copy(s = "foo") should be theSameInstanceAs
+      FooMetaMemoised(true, "foo")
   }
 
   it should "have a pattern matcher" in {
@@ -77,7 +62,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
     val recovered = in.readObject().asInstanceOf[FooMetaMemoised]
 
     recovered should equal(fooMeta)
-    recovered should be theSameInstanceAs (fooMeta)
+    recovered should be theSameInstanceAs fooMeta
   }
 
   it should "have a Generic" in {
@@ -85,7 +70,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
     import G._
 
     from(to(fooMeta)) should equal(fooMeta)
-    from(to(fooMeta)) should be theSameInstanceAs (fooMeta)
+    from(to(fooMeta)) should be theSameInstanceAs fooMeta
   }
 
   it should "have a LabelledGeneric" in {
@@ -93,7 +78,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
     import LG._
 
     from(to(fooMeta)) should equal(fooMeta)
-    from(to(fooMeta)) should be theSameInstanceAs (fooMeta)
+    from(to(fooMeta)) should be theSameInstanceAs fooMeta
   }
 
   it should "have a Typeable" in {
@@ -104,7 +89,7 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
     T.cast("hello") shouldBe empty
     T.cast(1L) shouldBe empty
     T.cast(fooMeta).value shouldBe fooMeta
-    T.cast(fooMeta).value should be theSameInstanceAs (fooMeta)
+    T.cast(fooMeta).value should be theSameInstanceAs fooMeta
   }
 
   it should "allow user-land Semigroup (Generic) derivation" in {
@@ -117,17 +102,9 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    <<<<<<< HEAD
-      (fooMeta |+| fooMeta) should be theSameInstanceAs (FooMetaMemoised(
-      true,
-      "hellohello"
-    ))
-    =======
-    (fooMeta |+| fooMeta) should be theSameInstanceAs (FooMetaMemoised(
-      true,
-      "hellohello"
-    ))
-    >>>>>>> upstream / master
+    (fooMeta |+| fooMeta) should be theSameInstanceAs
+      FooMetaMemoised(true, "hellohello")
+
   }
 
   // redundant, just using it becuase I am familiar with the required imports
@@ -141,17 +118,9 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
   it should "have memoised string fields" in {
     // constructing the String on the heap, so the compiler doesn't intern
     // we can't guarantee this if memoiseStrong=false (unless using string interning)
-    <<<<<<< HEAD
-      FooMetaMemoised(true, 1337133742.toString).s should be theSameInstanceAs FooMetaMemoised(
-      false,
-      1337133742.toString
-    ).s
-    =======
-    FooMetaMemoised(true, 1337133742.toString).s should be theSameInstanceAs FooMetaMemoised(
-      false,
-      1337133742.toString
-    ).s
-    >>>>>>> upstream / master
+    FooMetaMemoised(true, 1337133742.toString).s should be theSameInstanceAs
+      FooMetaMemoised(false, 1337133742.toString).s
+
   }
 
   it should "apply weak memoisation" in {
