@@ -19,7 +19,7 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
   //
   // final case class Foo[+T] private (a: Boolean, s: String, t: T, i: Int = 0)
 
-  val foo = Foo(true, "hello", "world", 1)
+  val foo     = Foo(true, "hello", "world", 1)
   val fooMeta = FooMeta(true, "hello", "world", 1)
 
   "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
@@ -63,20 +63,25 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
 
   it should "implement Product" in {
     fooMeta.productPrefix should equal("FooMeta")
-    fooMeta.productIterator.toList should contain theSameElementsInOrderAs (List(true, "hello", "world", 1))
+    fooMeta.productIterator.toList should contain theSameElementsInOrderAs (List(
+      true,
+      "hello",
+      "world",
+      1
+    ))
   }
 
   it should "be serialisable" in {
     // should really check with the serialised form of the equivalent case class
 
     val bytes_out = new ByteArrayOutputStream
-    val out = new ObjectOutputStream(bytes_out)
+    val out       = new ObjectOutputStream(bytes_out)
 
     out.writeObject(fooMeta)
     out.close()
 
     val bytes_in = new ByteArrayInputStream(bytes_out.toByteArray())
-    val in = new ObjectInputStream(bytes_in)
+    val in       = new ObjectInputStream(bytes_in)
 
     val recovered = in.readObject().asInstanceOf[FooMeta[String]]
 
@@ -107,7 +112,10 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
     T.cast(1L) shouldBe empty
     T.cast(fooMeta) shouldBe empty
     T.cast(FooMeta(true, "hello", 1, 1)) shouldBe empty
-    T.cast(FooMeta(true, "hello", 1L, 1)).value shouldBe FooMeta(true, "hello", 1L, 1)
+    T.cast(FooMeta(true, "hello", 1L, 1)).value shouldBe FooMeta(true,
+                                                                 "hello",
+                                                                 1L,
+                                                                 1)
   }
 
   it should "allow user-land Semigroup (Generic) derivation" in {
@@ -120,14 +128,18 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    (fooMeta |+| fooMeta) should equal(FooMeta(true, "hellohello", "worldworld", 2))
+    (fooMeta |+| fooMeta) should equal(
+      FooMeta(true, "hellohello", "worldworld", 2)
+    )
   }
 
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {
     import spray.json._
     import fommil.sjs.FamilyFormats._
 
-    fooMeta.toJson.compactPrint should equal("""{"a":true,"s":"hello","t":"world","i":1}""")
+    fooMeta.toJson.compactPrint should equal(
+      """{"a":true,"s":"hello","t":"world","i":1}"""
+    )
   }
 
 }

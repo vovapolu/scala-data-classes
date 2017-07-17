@@ -19,17 +19,17 @@ final class Foo private (
 ) extends scala.Serializable {
 
   def a: Boolean = _a
-  def s: String = _s
+  def s: String  = _s
 
   def copy(a: Boolean = a, s: String = s): Foo = Foo(a, s)
 
   // allows the user to re-memoise if the Interner was flushed. Only
   // generated if memoise = true & memoiseStrong = false. Called
   // .intern because there is precedent with String.intern
-  // def intern: Foo = Foo(a, s) FIXME memoise && !memoiseStrong is false, is it right?
+  // def intern: Foo = Foo(a, s) memoise && !memoiseStrong is false, is it right?
 
   override val toString: String = s"Foo($a,$s)"
-  override val hashCode: Int = a.hashCode + 13 * s.hashCode
+  override val hashCode: Int    = a.hashCode + 13 * s.hashCode
 
   // // not added if memoiseStrong=true. hashCode shortcut only added if memoiseHashCode=true
   // override def equals(o: Any): Boolean = o match {
@@ -69,28 +69,31 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
   // this wrapper is only needed when memoiseStrong=true (to force value equality)
   private class FooWithValueEquality(val f: Foo) {
     override def toString: String = f.toString
-    override def hashCode: Int = f.hashCode
+    override def hashCode: Int    = f.hashCode
     override def equals(o: Any): Boolean = o match {
       // only use the hashCode shortcut if memoiseHashCode=true
-      case that: FooWithValueEquality if hashCode == that.hashCode => f.a == that.f.a && f.s == that.f.s
+      case that: FooWithValueEquality if hashCode == that.hashCode =>
+        f.a == that.f.a && f.s == that.f.s
       case _ => false
     }
   }
 
   // memoiseStrong = true, so use a StrongInterner. Shame there is no SoftInterner
-  private[this] val memoised_cache = com.google.common.collect.Interners.newStrongInterner[FooWithValueEquality]()
-  private[this] val memoisedRef_cache = com.google.common.collect.Interners.newStrongInterner[AnyRef]()
+  private[this] val memoised_cache = com.google.common.collect.Interners
+      .newStrongInterner[FooWithValueEquality]()
+  private[this] val memoisedRef_cache =
+    com.google.common.collect.Interners.newStrongInterner[AnyRef]()
   def apply(a: Boolean, s: String): Foo = {
     // special case available for String.intern with memoizeStringsIntern=true
     val s_memoised = memoisedRef_cache.intern(s).asInstanceOf[String]
-    val created = new Foo(a, s_memoised)
-    val safe = created.synchronized(created) // safe publish vars
+    val created    = new Foo(a, s_memoised)
+    val safe       = created.synchronized(created) // safe publish vars
     memoised_cache.intern(new FooWithValueEquality(safe)).f
   }
   def unapply(f: Foo): Option[(Boolean, String)] = Some((f.a, f.s))
 
-  import shapeless.{::, HNil, Generic, LabelledGeneric, Typeable}
-  import shapeless.labelled.{FieldType, field}
+  import shapeless.{ ::, Generic, HNil, LabelledGeneric, Typeable }
+  import shapeless.labelled.{ field, FieldType }
   import shapeless.syntax.singleton._
   val a_tpe = 'a.narrow
   val s_tpe = 's.narrow
@@ -102,10 +105,19 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
     override def describe: String = s"Foo[Boolean,String]"
   }
 
-  implicit val LabelledGenericFoo: LabelledGeneric.Aux[Foo, FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: HNil] =
+  implicit val LabelledGenericFoo: LabelledGeneric.Aux[Foo,
+    FieldType[a_tpe.type, Boolean] ::
+      FieldType[s_tpe.type, String] ::
+      HNil] =
     new LabelledGeneric[Foo] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: HNil
-      override def to(f: Foo): Repr = field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: HNil
+      override type Repr =
+        FieldType[a_tpe.type, Boolean] ::
+          FieldType[s_tpe.type, String] ::
+          HNil
+      override def to(f: Foo): Repr =
+        field[a_tpe.type](f.a) ::
+          field[s_tpe.type](f.s) ::
+          HNil
       override def from(r: Repr): Foo = GenericFoo.from(r)
     }
 
