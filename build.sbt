@@ -60,5 +60,15 @@ wartremoverWarnings in (Compile, compile) := Seq(
   Wart.FinalCaseClass,
   Wart.ExplicitImplicitTypes
 )
-wartremoverWarnings in (Test, compile) := (wartremoverWarnings in (Compile, compile)).value
-  .filterNot(_ == Wart.NonUnitStatements)
+
+wartremoverWarnings in (Test, compile) := Seq(
+  Wart.EitherProjectionPartial,
+  Wart.TraversableOps,
+  Wart.Product,
+  Wart.Return,
+  Wart.Serializable,
+  Wart.StringPlusAny,
+  Wart.TryPartial,
+  Wart.FinalCaseClass,
+  Wart.ExplicitImplicitTypes
+)

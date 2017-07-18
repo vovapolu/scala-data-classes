@@ -15,7 +15,7 @@ import shapeless._
 // intentionally parallel to try and flush out concurrency issues
 class MemoisedSpec extends FlatSpec with ParallelTestExecution {
 
-  val foo = Foo(true, "hello")
+  val foo     = Foo(true, "hello")
   val fooMeta = FooMetaMemoised(true, "hello")
 
   "@data(memoised) class Foo" should "have equals, hashCode and toString defined" in {

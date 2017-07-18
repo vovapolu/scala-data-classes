@@ -2,8 +2,6 @@
 // License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite
 
-import DataInfo._
-
 import scala.collection.immutable.Seq
 import scala.meta._
 
@@ -16,16 +14,15 @@ object DataStat {
 
   object DataApplyBuilder extends DataStatBuilder {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
-      val params = dataInfo.classParams.map(
-        param =>
+      val params = dataInfo.classParams.zip(dataInfo.classParamsTypes).map {
+        case (param, tpe) =>
           param.default match {
             case Some(defaultVal) =>
-              param"""${Term.Name(param.name.value)}: ${param.decltpe.get} =
-                   $defaultVal"""
+              param"""${Term.Name(param.name.value)}: $tpe = $defaultVal"""
             case None =>
-              param"${Term.Name(param.name.value)}: ${param.decltpe.get}"
-        }
-      )
+              param"${Term.Name(param.name.value)}: $tpe"
+          }
+      }
 
       val applyBody = if (dataInfo.getMod("memoise")) {
         val memoisedParams = dataInfo.classParamsWithTypes.filter {
@@ -89,15 +86,13 @@ object DataStat {
         param => q"that.${Term.Name(param.name.value)}"
       )
 
-      val tupleTypes = if (dataInfo.classParams.length > 1) {
-        t"(..${dataInfo.classParamsTypes})"
-      } else {
-        t"${dataInfo.classParamsTypes.head}"
+      val tupleTypes = dataInfo.classParamsTypes match {
+        case Seq(tpe1) => tpe1
+        case tpes      => t"(..$tpes)"
       }
-      val tupleArgs = if (clFields.length > 1) {
-        q"(..$clFields)"
-      } else {
-        clFields.head
+      val tupleArgs = clFields match {
+        case Seq(field1) => field1
+        case fields      => q"(..$fields)"
       }
       Seq(
         q"""def unapply[..${dataInfo.simpleTypeParams}](
@@ -209,8 +204,8 @@ object DataStat {
         }
       }
       val toStringBody =
-        q"""${Lit.String(dataInfo.name.value + "(")}
-            + $paramsToString + ${Lit.String(")")}"""
+        q"""${Lit.String(dataInfo.name.value + "(")} +
+           $paramsToString + ${Lit.String(")")}"""
 
       Seq(
         if (dataInfo.getMod("memoiseToString")) {
@@ -339,8 +334,8 @@ object DataStat {
       )
 
       Seq(
-        q"""import _root_.shapeless.{::, HNil, Generic, LabelledGeneric,
-           Typeable, TypeCase}""",
+        q"""import _root_.shapeless.{
+           ::, HNil, Generic, LabelledGeneric, Typeable}""",
         q"import _root_.shapeless.labelled.{FieldType, field}",
         q"import _root_.shapeless.syntax.singleton._"
       ) ++ typeSymbols
@@ -363,7 +358,7 @@ object DataStat {
         dataInfo.classParamsTypes
           .groupBy(_.toString())
           .values
-          .map(_.head)
+          .collect { case head :: _ => head }
           .toList: _*
       )
 
@@ -375,6 +370,11 @@ object DataStat {
         .map(
           tpe => q"val ${Pat.Var.Term(Term.Name(s"TC_$tpe"))} = TypeCase[$tpe]"
         )
+      val typeCasesWithImport = if (typeCases.nonEmpty) {
+        q"import _root_.shapeless.TypeCase" +: typeCases
+      } else {
+        typeCases
+      }
       val dataWithTypeCases = {
         val args = dataInfo.classParamsWithTypes.map {
           case (param, tpe) =>
@@ -413,7 +413,7 @@ object DataStat {
         q"""
            new Typeable[${dataInfo.dataType}] {
              override def cast(t: Any): Option[${dataInfo.dataType}] = {
-               ..$typeCases
+               ..$typeCasesWithImport
                t match {
                  case f @ $dataWithTypeCases => Some(${dataInfo.dataCreating})
                  case _                      => None

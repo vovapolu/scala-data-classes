@@ -80,7 +80,7 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
 
   // memoiseStrong = true, so use a StrongInterner. Shame there is no SoftInterner
   private[this] val memoised_cache = com.google.common.collect.Interners
-      .newStrongInterner[FooWithValueEquality]()
+    .newStrongInterner[FooWithValueEquality]()
   private[this] val memoisedRef_cache =
     com.google.common.collect.Interners.newStrongInterner[AnyRef]()
   def apply(a: Boolean, s: String): Foo = {
@@ -105,10 +105,11 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
     override def describe: String = s"Foo[Boolean,String]"
   }
 
-  implicit val LabelledGenericFoo: LabelledGeneric.Aux[Foo,
-    FieldType[a_tpe.type, Boolean] ::
-      FieldType[s_tpe.type, String] ::
-      HNil] =
+  implicit val LabelledGenericFoo
+    : LabelledGeneric.Aux[Foo,
+                          FieldType[a_tpe.type, Boolean] ::
+                            FieldType[s_tpe.type, String] ::
+                            HNil] =
     new LabelledGeneric[Foo] {
       override type Repr =
         FieldType[a_tpe.type, Boolean] ::
