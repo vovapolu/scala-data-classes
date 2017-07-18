@@ -20,7 +20,7 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
     override def hashCode: Int = a.hashCode + 13 * (s.hashCode + 13 * xy.hashCode)
     override def toString: String = "A(" + (a.toString + "," + s.toString + "," + xy.toString) + ")"
 
-    def copy[X, Y](a: Boolean = this.a, s: String = this.s, xy: Either[X, Option[Y]] = this.xy): A[X, Y] = A(a, s, xy)
+    def copy[N$X, N$Y](a: Boolean = this.a, s: String = this.s, xy: Either[N$X, Option[N$Y]] = this.xy): A[N$X, N$Y] = A(a, s, xy)
 
     def canEqual(that: Any): Boolean = that.isInstanceOf[A[X, Y]]
     def productArity: Int = 3
@@ -76,7 +76,7 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A
 
-    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable, TypeCase }
+    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable }
     import _root_.shapeless.labelled.{ FieldType, field }
     import _root_.shapeless.syntax.singleton._
 
@@ -86,6 +86,7 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
 
     implicit def TypeableA[X, Y](implicit `TEither[X, Option[Y]]`: Typeable[Either[X, Option[Y]]]): Typeable[A[X, Y]] = new Typeable[A[X, Y]] {
       override def cast(t: Any): Option[A[X, Y]] = {
+        import _root_.shapeless.TypeCase
         val `TC_Either[X, Option[Y]]` = TypeCase[Either[X, Option[Y]]]
         t match {
           case f @ A(a, s, `TC_Either[X, Option[Y]]`(xy)) =>

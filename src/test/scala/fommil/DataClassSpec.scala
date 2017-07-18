@@ -14,6 +14,8 @@ class DataClassSpec extends FlatSpec with ParallelTestExecution {
     """@data class A(a: Int = 1)""" should compile
     """@data class A(a: Int = 1, b: Int)""" should compile
 
+    """@data class A""" shouldNot compile
+
     """@data case class A(a: Int)""" shouldNot compile
     """@data final class A(a: Int)""" shouldNot compile
     """@data abstract class A(a: Int)""" shouldNot compile

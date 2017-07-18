@@ -119,19 +119,21 @@ final object Foo
 
   implicit val LabelledGenericFoo
     : LabelledGeneric.Aux[Foo,
-                          FieldType[a_tpe.type, Option[Boolean]] :: FieldType[
-                            b_tpe.type,
-                            Option[Boolean]
-                          ] :: FieldType[s_tpe.type, Option[String]] :: HNil] =
+                          FieldType[a_tpe.type, Option[Boolean]] ::
+                            FieldType[b_tpe.type, Option[Boolean]] ::
+                            FieldType[s_tpe.type, Option[String]] ::
+                            HNil] =
     new LabelledGeneric[Foo] {
       override type Repr =
-        FieldType[a_tpe.type, Option[Boolean]] :: FieldType[b_tpe.type, Option[
-          Boolean
-        ]] :: FieldType[s_tpe.type, Option[String]] :: HNil
+        FieldType[a_tpe.type, Option[Boolean]] ::
+          FieldType[b_tpe.type, Option[Boolean]] ::
+          FieldType[s_tpe.type, Option[String]] ::
+          HNil
       override def to(f: Foo): Repr =
-        field[a_tpe.type](f.a) :: field[b_tpe.type](f.b) :: field[s_tpe.type](
-          f.s
-        ) :: HNil
+        field[a_tpe.type](f.a) ::
+          field[b_tpe.type](f.b) ::
+          field[s_tpe.type](f.s) ::
+          HNil
       override def from(r: Repr): Foo = GenericFoo.from(r)
     }
 

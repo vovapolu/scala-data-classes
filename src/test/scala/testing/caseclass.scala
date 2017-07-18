@@ -12,8 +12,7 @@ final class Foo[+T] private (
   private[this] var _s: String,
   private[this] var _t: T,
   private[this] var _i: Int
-) extends scala.Serializable
-    with scala.Product {
+) extends scala.Serializable with scala.Product {
   def a: Boolean = _a
   def s: String  = _s
   def t: T       = _t
@@ -38,7 +37,8 @@ final class Foo[+T] private (
     a.hashCode + 13 * (s.hashCode + 13 * (t.hashCode + 13 * i.hashCode))
   override def equals(o: Any): Boolean = o match {
     case that: Foo[_] =>
-      (this eq that) || (a == that.a && s == that.s && t == that.t && i == that.i)
+      (this eq that) ||
+        (a == that.a && s == that.s && t == that.t && i == that.i)
     case _ => false
   }
 
@@ -108,16 +108,19 @@ final object Foo extends scala.Serializable {
       override def describe: String = s"Foo[Boolean,String,${tt.describe},Int]"
     }
 
-  implicit def LabelledGenericFoo[T]
-    : LabelledGeneric.Aux[Foo[T], FieldType[a_tpe.type, Boolean] :: FieldType[
-      s_tpe.type,
-      String
-    ] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil] =
+  implicit def LabelledGenericFoo[T]: LabelledGeneric.Aux[Foo[T],
+    FieldType[a_tpe.type, Boolean] ::
+      FieldType[s_tpe.type, String] ::
+      FieldType[t_tpe.type, T] ::
+      FieldType[i_tpe.type, Int] ::
+      HNil] =
     new LabelledGeneric[Foo[T]] {
-      override type Repr = FieldType[a_tpe.type, Boolean] :: FieldType[
-        s_tpe.type,
-        String
-      ] :: FieldType[t_tpe.type, T] :: FieldType[i_tpe.type, Int] :: HNil
+      override type Repr =
+        FieldType[a_tpe.type, Boolean] ::
+        FieldType[s_tpe.type, String] ::
+        FieldType[t_tpe.type, T] ::
+        FieldType[i_tpe.type, Int] ::
+        HNil
 
       override def to(f: Foo[T]): Repr =
         field[a_tpe.type](f.a) ::
@@ -129,8 +132,8 @@ final object Foo extends scala.Serializable {
       override def from(r: Repr): Foo[T] = GenericFoo.from(r)
     }
 
-  implicit def GenericFoo[T]
-    : Generic.Aux[Foo[T], Boolean :: String :: T :: Int :: HNil] =
+  implicit def GenericFoo[T]: Generic.Aux[Foo[T],
+    Boolean :: String :: T :: Int :: HNil] =
     new Generic[Foo[T]] {
       override type Repr = Boolean :: String :: T :: Int :: HNil
       override def to(f: Foo[T]): Repr = LabelledGenericFoo[T].to(f)

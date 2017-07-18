@@ -105,15 +105,20 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
     override def describe: String = s"Foo[Boolean,String]"
   }
 
-  implicit val LabelledGenericFoo: LabelledGeneric.Aux[Foo, FieldType[
-    a_tpe.type,
-    Boolean
-  ] :: FieldType[s_tpe.type, String] :: HNil] =
+  implicit val LabelledGenericFoo
+    : LabelledGeneric.Aux[Foo,
+                          FieldType[a_tpe.type, Boolean] ::
+                            FieldType[s_tpe.type, String] ::
+                            HNil] =
     new LabelledGeneric[Foo] {
       override type Repr =
-        FieldType[a_tpe.type, Boolean] :: FieldType[s_tpe.type, String] :: HNil
+        FieldType[a_tpe.type, Boolean] ::
+          FieldType[s_tpe.type, String] ::
+          HNil
       override def to(f: Foo): Repr =
-        field[a_tpe.type](f.a) :: field[s_tpe.type](f.s) :: HNil
+        field[a_tpe.type](f.a) ::
+          field[s_tpe.type](f.s) ::
+          HNil
       override def from(r: Repr): Foo = GenericFoo.from(r)
     }
 

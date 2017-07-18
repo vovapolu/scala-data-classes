@@ -2,8 +2,6 @@
 // License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite
 
-import DataInfo._
-
 import scala.collection.immutable.Seq
 import scala.meta._
 
@@ -16,61 +14,66 @@ object DataStat {
 
   object DataApplyBuilder extends DataStatBuilder {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
-      val params = dataInfo.classParams.map(
-        param =>
+      val params = dataInfo.classParams.zip(dataInfo.classParamsTypes).map {
+        case (param, tpe) =>
           param.default match {
             case Some(defaultVal) =>
-              param"${Term.Name(param.name.value)}: ${param.decltpe.get} = $defaultVal"
+              param"""${Term.Name(param.name.value)}: $tpe = $defaultVal"""
             case None =>
-              param"${Term.Name(param.name.value)}: ${param.decltpe.get}"
-        }
-      )
-
-      val applyBody =
-        if (dataInfo.getMod("memoise")) {
-          val memoisedParams = dataInfo.classParamsWithTypes.filter {
-            case (param, _) =>
-              dataInfo.extraParams.memoiseRefs.contains(param.value)
-          }.map {
-            case (param, tpe) =>
-              q"""val ${Pat.Var.Term(Term.Name(param.value + "_memoised"))} =
-                 memoisedRef_cache.intern($param).asInstanceOf[$tpe]"""
+              param"${Term.Name(param.name.value)}: $tpe"
           }
+      }
 
-          val argsWithMemoised = dataInfo.classParamNames.map(
-            param =>
-              if (dataInfo.extraParams.memoiseRefs.contains(param.value)) {
-                Term.Name(param.value + "_memoised")
-              } else {
-                param
-            }
-          )
+      val applyBody = if (dataInfo.getMod("memoise")) {
+        val memoisedParams = dataInfo.classParamsWithTypes.filter {
+          case (param, _) =>
+            dataInfo.extraParams.memoiseRefs.contains(param.value)
+        }.map {
+          case (param, tpe) =>
+            q"""val ${Pat.Var.Term(Term.Name(param.value + "_memoised"))} =
+               memoisedRef_cache.intern($param).asInstanceOf[$tpe]"""
+        }
 
-          val interning = if (dataInfo.getMod("memoiseStrong")) {
-            val wrapperCreating = if (dataInfo.typeParams.nonEmpty) {
-              q"new ${Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")}[..${dataInfo.typeParamsNames}](safe)"
+        val argsWithMemoised = dataInfo.classParamNames.map(
+          param =>
+            if (dataInfo.extraParams.memoiseRefs.contains(param.value)) {
+              Term.Name(param.value + "_memoised")
             } else {
-              q"new ${Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")}(safe)"
-            }
-            q"memoised_cache.intern($wrapperCreating).d"
-          } else {
-            q"memoised_cache.intern(safe)"
+              param
           }
+        )
 
-          memoisedParams ++ Seq(
-            q"val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(..$argsWithMemoised)",
-            q"val safe = created.synchronized(created)",
-            interning
-          )
+        val interning = if (dataInfo.getMod("memoiseStrong")) {
+          val nameWithValueEquality =
+            Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")
+          val wrapperCreating = if (dataInfo.typeParams.nonEmpty) {
+            q"new $nameWithValueEquality[..${dataInfo.typeParamsNames}](safe)"
+          } else {
+            q"new $nameWithValueEquality(safe)"
+          }
+          q"memoised_cache.intern($wrapperCreating).d"
         } else {
-          Seq(
-            q"val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(..${dataInfo.classParamNames})",
-            q"created.synchronized(created)"
-          )
+          q"memoised_cache.intern(safe)"
         }
+
+        memoisedParams ++ Seq(
+          q"""val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
+             ..$argsWithMemoised)""",
+          q"val safe = created.synchronized(created)",
+          interning
+        )
+      } else {
+        Seq(
+          q"""val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
+              ..${dataInfo.classParamNames})""",
+          q"created.synchronized(created)"
+        )
+      }
 
       Seq(
-        q"""def apply[..${dataInfo.simpleTypeParams}](..$params): ${dataInfo.dataType} = {
+        q"""def apply[..${dataInfo.simpleTypeParams}](
+            ..$params
+          ): ${dataInfo.dataType} = {
           ..$applyBody
         }"""
       )
@@ -83,18 +86,17 @@ object DataStat {
         param => q"that.${Term.Name(param.name.value)}"
       )
 
-      val tupleTypes = if (dataInfo.classParams.length > 1) {
-        t"(..${dataInfo.classParamsTypes})"
-      } else {
-        t"${dataInfo.classParamsTypes.head}"
+      val tupleTypes = dataInfo.classParamsTypes match {
+        case Seq(tpe1) => tpe1
+        case tpes      => t"(..$tpes)"
       }
-      val tupleArgs = if (clFields.length > 1) {
-        q"(..$clFields)"
-      } else {
-        clFields.head
+      val tupleArgs = clFields match {
+        case Seq(field1) => field1
+        case fields      => q"(..$fields)"
       }
       Seq(
-        q"""def unapply[..${dataInfo.simpleTypeParams}](that: ${dataInfo.dataType}): Option[$tupleTypes] =
+        q"""def unapply[..${dataInfo.simpleTypeParams}](
+            that: ${dataInfo.dataType}): Option[$tupleTypes] =
          Some($tupleArgs)"""
       )
     }
@@ -114,7 +116,8 @@ object DataStat {
         paramName => q"that.$paramName == this.$paramName"
       )
       val eqsWithAnds = eqs match {
-        case Seq(eq1) => eq1
+        case Seq(eq1) =>
+          eq1
         case Seq(eq1, rest @ _*) =>
           rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
       }
@@ -143,7 +146,8 @@ object DataStat {
         case (param, i) => p"case ${Lit.Int(i)} => this.$param"
       }
       Seq(
-        q"def canEqual(that: Any): Boolean = that.isInstanceOf[${dataInfo.dataType}]",
+        q"""def canEqual(that: Any): Boolean =
+           that.isInstanceOf[${dataInfo.dataType}]""",
         q"def productArity: Int = ${Lit.Int(dataInfo.classParams.length)}",
         q"""def productElement(n: Int): Any =
          n match {
@@ -151,8 +155,10 @@ object DataStat {
             case _ => throw new IndexOutOfBoundsException(n.toString())
          }
        """,
-        q"override def productPrefix: String = ${Lit.String(dataInfo.name.value)}",
-        q"override def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](this)"
+        q"""override def productPrefix: String =
+           ${Lit.String(dataInfo.name.value)}""",
+        q"""override def productIterator: Iterator[Any] =
+           scala.runtime.ScalaRunTime.typedProductIterator[Any](this)"""
       )
     }
   }
@@ -163,7 +169,8 @@ object DataStat {
         def paramToHashCode(name: Term.Name) = q"$name.hashCode"
 
         dataInfo.classParamNames.reverse match {
-          case Seq(param1) => paramToHashCode(param1)
+          case Seq(param1) =>
+            paramToHashCode(param1)
           case Seq(param1, rest @ _*) =>
             rest.foldLeft[Term](paramToHashCode(param1)) {
               case (expr, param) => q"$param.hashCode + 13 * ($expr)"
@@ -187,7 +194,8 @@ object DataStat {
         def paramToString(name: Term.Name) = q"$name.toString"
 
         dataInfo.classParamNames match {
-          case Seq(param1) => paramToString(param1)
+          case Seq(param1) =>
+            paramToString(param1)
           case Seq(param1, rest @ _*) =>
             rest.foldLeft[Term](paramToString(param1)) {
               case (expr, param) =>
@@ -196,7 +204,8 @@ object DataStat {
         }
       }
       val toStringBody =
-        q"${Lit.String(dataInfo.name.value + "(")} + $paramsToString + ${Lit.String(")")}"
+        q"""${Lit.String(dataInfo.name.value + "(")} +
+           $paramsToString + ${Lit.String(")")}"""
 
       Seq(
         if (dataInfo.getMod("memoiseToString")) {
@@ -207,21 +216,38 @@ object DataStat {
       )
     }
 
-    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
-      Seq(
-        q"override def toString: String = ${Lit.String(dataInfo.name.value)}"
-      )
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = Seq(
+      q"override def toString: String = ${Lit.String(dataInfo.name.value)}"
+    )
   }
 
   object DataCopyBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val newTypes =
+        dataInfo.typeParams.map(tparam => Type.Name("N$" + tparam.name.value))
+      val oldToNewTypes =
+        dataInfo.typeParamsNames.map(_.value).zip(newTypes).toMap
+      val newTypeParams: Seq[Type.Param] = newTypes.map(
+        tpe =>
+          Type.Param(Seq(), tpe, Seq(), Type.Bounds(None, None), Seq(), Seq())
+      )
+      // I couldn't find way to do it as quasiquote
+
+      val newDataType = if (newTypeParams.nonEmpty) {
+        t"${dataInfo.name}[..$newTypes]"
+      } else {
+        t"${dataInfo.name}"
+      }
+
       val copyParams = dataInfo.classParamsWithTypes.map {
-        case (param, tpe) => param"$param: $tpe = this.$param"
+        case (param, tpe) =>
+          param"""$param: ${DataInfo.replaceType(tpe, oldToNewTypes)} =
+                 this.$param"""
       }
 
       Seq(
-        q"""def copy[..${dataInfo.simpleTypeParams}](..$copyParams): ${dataInfo.dataType} =
-            ${dataInfo.termName}(..${dataInfo.classParamNames})"""
+        q"""def copy[..$newTypeParams](..$copyParams): $newDataType =
+          ${dataInfo.dataCreating}"""
       )
     }
   }
@@ -238,7 +264,8 @@ object DataStat {
               t match {
                 case t: Type.Name => writePrimitive(t)
               }
-            case t"String" => q"out.writeUTF($param)"
+            case t"String" =>
+              q"out.writeUTF($param)"
             case _ =>
               if (dataInfo.getMod("checkSerializable")) {
                 q"out.writeObject($param: Serializable)"
@@ -249,7 +276,8 @@ object DataStat {
       }
       Seq(q"""
           @throws[_root_.java.io.IOException]
-          private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+          private[this] def writeObject(
+            out: java.io.ObjectOutputStream): Unit = {
             ..$writes
           }
         """)
@@ -258,7 +286,8 @@ object DataStat {
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =
       Seq(q"""
           @throws[_root_.java.io.IOException]
-          private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
+          private[this] def writeObject(
+            out: java.io.ObjectOutputStream): Unit = ()
         """)
   }
 
@@ -279,6 +308,7 @@ object DataStat {
             case _          => q"in.readObject().asInstanceOf[$tpe]"
           }}"
       }
+
       Seq(q"""
         @throws[_root_.java.io.IOException]
         @throws[_root_.java.lang.ClassNotFoundException]
@@ -297,17 +327,19 @@ object DataStat {
   }
 
   object DataReadResolveBuilder extends DataStatBuilder {
-    override def classStats(dataInfo: DataInfo): Seq[Stat] =
-      Seq(q"""
-            @throws[_root_.java.io.ObjectStreamException]
-            private[this] def readResolve(): Any = ${dataInfo.dataCreating}
-          """)
+    override def classStats(dataInfo: DataInfo): Seq[Stat] = Seq(
+      q"""
+          @throws[_root_.java.io.ObjectStreamException]
+          private[this] def readResolve(): Any = ${dataInfo.dataCreating}
+      """
+    )
 
-    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
-      Seq(q"""
-            @throws[_root_.java.io.ObjectStreamException]
-            private[this] def readResolve(): Any = ${dataInfo.termName}
-          """)
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = Seq(
+      q"""
+          @throws[_root_.java.io.ObjectStreamException]
+          private[this] def readResolve(): Any = ${dataInfo.termName}
+        """
+    )
   }
 
   object DataShapelessBaseBuilder extends DataStatBuilder {
@@ -319,7 +351,8 @@ object DataStat {
       )
 
       Seq(
-        q"import _root_.shapeless.{::, HNil, Generic, LabelledGeneric, Typeable, TypeCase}",
+        q"""import _root_.shapeless.{
+           ::, HNil, Generic, LabelledGeneric, Typeable}""",
         q"import _root_.shapeless.labelled.{FieldType, field}",
         q"import _root_.shapeless.syntax.singleton._"
       ) ++ typeSymbols
@@ -342,7 +375,7 @@ object DataStat {
         dataInfo.classParamsTypes
           .groupBy(_.toString())
           .values
-          .map(_.head)
+          .collect { case head :: _ => head }
           .toList: _*
       )
 
@@ -354,6 +387,11 @@ object DataStat {
         .map(
           tpe => q"val ${Pat.Var.Term(Term.Name(s"TC_$tpe"))} = TypeCase[$tpe]"
         )
+      val typeCasesWithImport = if (typeCases.nonEmpty) {
+        q"import _root_.shapeless.TypeCase" +: typeCases
+      } else {
+        typeCases
+      }
       val dataWithTypeCases = {
         val args = dataInfo.classParamsWithTypes.map {
           case (param, tpe) =>
@@ -384,14 +422,15 @@ object DataStat {
               }
           }
         }
-        q"${Lit.String(dataInfo.name.value + "[")} + $targs + ${Lit.String("]")}"
+        q"""${Lit.String(dataInfo.name.value + "[")} +
+           $targs + ${Lit.String("]")}"""
       }
 
       val typeableBody =
         q"""
            new Typeable[${dataInfo.dataType}] {
              override def cast(t: Any): Option[${dataInfo.dataType}] = {
-               ..$typeCases
+               ..$typeCasesWithImport
                t match {
                  case f @ $dataWithTypeCases => Some(${dataInfo.dataCreating})
                  case _                      => None
@@ -403,13 +442,15 @@ object DataStat {
 
       if (implicitTypeables.nonEmpty) {
         Seq(q"""
-          implicit def $typeableName[..${dataInfo.simpleTypeParams}]
-            (..$implicitTypeables): Typeable[${dataInfo.dataType}] = $typeableBody
+          implicit def $typeableName[..${dataInfo.simpleTypeParams}](
+              ..$implicitTypeables
+            ): Typeable[${dataInfo.dataType}] = $typeableBody
           """)
       } else {
         Seq(
-          q"""
-          implicit def $typeableName[..${dataInfo.simpleTypeParams}]: Typeable[${dataInfo.dataType}] = $typeableBody"""
+          q"""implicit def $typeableName
+             [..${dataInfo.simpleTypeParams}]: Typeable[${dataInfo.dataType}] =
+            $typeableBody"""
         )
       }
     }
@@ -456,7 +497,8 @@ object DataStat {
           Generic.Aux[${dataInfo.dataType}, $reprType] =
           new Generic[${dataInfo.dataType}] {
             override type Repr = $reprType
-            override def to(f: ${dataInfo.dataType}): Repr = $labelledGenericWithTypes.to(f)
+            override def to(f: ${dataInfo.dataType}): Repr =
+              $labelledGenericWithTypes.to(f)
             override def from(r: Repr): ${dataInfo.dataType} = r match {
               case ($fields) => ${dataInfo.dataCreating}
             }
@@ -469,7 +511,8 @@ object DataStat {
           new LabelledGeneric[${dataInfo.dataType}] {
             override type Repr = $labelledReprType
             override def to(f: ${dataInfo.dataType}): Repr = $labelledFields
-            override def from(r: Repr): ${dataInfo.dataType} = $genericWithTypes.from(r)
+            override def from(r: Repr): ${dataInfo.dataType} =
+              $genericWithTypes.from(r)
           }
           """
 
@@ -507,17 +550,21 @@ object DataStat {
               paramName => q"that.d.$paramName == this.d.$paramName"
             )
             eqs match {
-              case Seq(eq1) => eq1
+              case Seq(eq1) =>
+                eq1
               case Seq(eq1, rest @ _*) =>
                 rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
             }
           }
           val wrapperCase = if (dataInfo.getMod("memoiseHashCode")) {
-            p"case that: $wrapperPatType if this.hashCode == that.hashCode => $wrapperCaseBody"
+            p"""case that: $wrapperPatType
+               if this.hashCode == that.hashCode => $wrapperCaseBody"""
           } else {
-            p"case that: $wrapperPatType => $wrapperCaseBody"
+            p"""case that: $wrapperPatType => $wrapperCaseBody"""
           }
-          q"""private class $wrapperName[..${dataInfo.simpleTypeParams}](val d: ${dataInfo.dataType}) {
+          q"""private class $wrapperName[..${dataInfo.simpleTypeParams}](
+                val d: ${dataInfo.dataType}
+              ) {
                override def toString: String = d.toString
                override def hashCode: Int = d.hashCode
                override def equals(o: Any): Boolean = o match {
@@ -530,29 +577,40 @@ object DataStat {
         Seq(
           dataWrapper,
           q"""private[this] val memoised_cache =
-              _root_.com.google.common.collect.Interners.newStrongInterner[$wrapperWildcardType]()"""
+              _root_.com.google.common.collect.Interners.newStrongInterner
+                [$wrapperWildcardType]()"""
         ) ++ (if (dataInfo.extraParams.memoiseRefs.nonEmpty) {
                 Seq(
-                  q"""private[this] val memoisedRef_cache =
-             _root_.com.google.common.collect.Interners.newStrongInterner[AnyRef]()"""
+                  q"""
+                      private[this] val memoisedRef_cache =
+                      _root_.com.google.common.collect.Interners.newStrongInterner
+                        [AnyRef]()
+                    """
                 )
               } else {
                 Seq()
               })
       } else {
         val dataWildCardType = if (dataInfo.typeParams.nonEmpty) {
-          t"${Type.Name(dataInfo.name.value)}[..${Seq.fill(dataInfo.typeParams.length)(t"_")}]"
+          t"""${Type.Name(dataInfo.name.value)}
+             [..${Seq.fill(dataInfo.typeParams.length)(t"_")}]"""
         } else {
           Type.Name(dataInfo.name.value)
         }
 
         Seq(
-          q"""private[this] val memoised_cache =
-              _root_.com.google.common.collect.Interners.newWeakInterner[$dataWildCardType]()"""
+          q"""
+              private[this] val memoised_cache =
+              _root_.com.google.common.collect.Interners.newWeakInterner
+                [$dataWildCardType]()
+            """
         ) ++ (if (dataInfo.extraParams.memoiseRefs.nonEmpty) {
                 Seq(
-                  q"""private[this] val memoisedRef_cache =
-             _root_.com.google.common.collect.Interners.newWeakInterner[AnyRef]()"""
+                  q"""
+                      private[this] val memoisedRef_cache =
+                      _root_.com.google.common.collect.Interners.newWeakInterner
+                        [AnyRef]()
+                    """
                 )
               } else {
                 Seq()

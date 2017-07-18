@@ -2,11 +2,11 @@ package fommil
 
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{ DataImpl, DataInfo }
+import fommil.stalagmite.{ DataImpl, ExtraParams }
 import org.scalatest._
 import org.scalatest.Matchers._
-import scala.collection.immutable.Seq
 
+import scala.collection.immutable.Seq
 import scala.io
 import scala.meta._
 import scala.meta.testkit._
@@ -29,11 +29,18 @@ class Generated extends FlatSpec with ParallelTestExecution {
       .mkString
     source.split("//---") match {
       case Array(input, target) =>
-        val inputMods   = input.lines.takeWhile(_.startsWith("//")).toList
-        val booleanMods = inputMods.head.stripPrefix("//").split(" ")
-        val extraMods = inputMods.tail
+        val inputMods = input.lines
+          .takeWhile(_.startsWith("//"))
+          .toList
+        val booleanMods = inputMods.headOption
+          .getOrElse("")
+          .stripPrefix("//")
+          .split(" ")
+        val extraMods = inputMods
+          .drop(1)
           .map(str => Seq(str.stripPrefix("//").split(" "): _*))
-          .map(strs => strs.head -> strs.tail)
+          .filter(_.nonEmpty)
+          .map { case mod :: keys => mod -> keys }
           .toMap
 
         val inputTree = input.lines
@@ -48,7 +55,7 @@ class Generated extends FlatSpec with ParallelTestExecution {
         val expandedTree = DataImpl.expand(
           inputTree,
           booleanMods.map(mod => mod -> true).toMap,
-          DataInfo.ExtraParams(extraMods.getOrElse("memoiseRefs", Seq()))
+          ExtraParams(extraMods.getOrElse("memoiseRefs", Seq()))
         )
         if (printStructure)
           println(expandedTree)
@@ -63,7 +70,7 @@ class Generated extends FlatSpec with ParallelTestExecution {
 
   "@data-generated class" should "have case-class methods" in {
     checkGenFile("CaseClassParityGen")
-    checkGenFile("CaseClassTypedParityGen", true)
+    checkGenFile("CaseClassTypedParityGen")
   }
 
   "@data-generated class with memoising" should "have cache, corresponding apply method" in {
