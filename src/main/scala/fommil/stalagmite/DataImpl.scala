@@ -2,14 +2,11 @@
 // License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite
 
-import fommil.stalagmite.DataInfo.ExtraParams
-
 import scala.collection.immutable.Seq
 import scala.meta._
 
 object DataImpl {
 
-  import DataInfo._
   import DataStat._
 
   def validateClass(ctor: Ctor.Primary,
@@ -19,10 +16,14 @@ object DataImpl {
       abort("Current implementation doesn't support curried class definitions")
     }
 
-    if (ctor.paramss.flatten.exists(param =>
-      param.mods.exists(_ != Mod.ValParam())))
-    {
+    if (ctor.paramss.flatten.exists(
+          param => param.mods.exists(_ != Mod.ValParam())
+        )) {
       abort("Fields should be only vals, without modifiers")
+    }
+
+    if (ctor.paramss.flatten.isEmpty) {
+      abort("Class shouldn't be empty")
     }
 
     if (ctor.mods.nonEmpty) {
@@ -37,8 +38,9 @@ object DataImpl {
       abort("Current implementation doesn't support inheritance")
     }
 
-    if (!tmpl.self.name.isInstanceOf[Name.Anonymous]) {
-      abort("Current implementation doesn't support self type")
+    tmpl.self.name match {
+      case _: Name.Anonymous =>
+      case _                 => abort("Current implementation doesn't support self type")
     }
 
     if (tmpl.stats.map(_.length).getOrElse(0) != 0) {
@@ -46,22 +48,23 @@ object DataImpl {
     }
   }
 
-  def validateDataInfo(dataInfo: DataInfo) = {
+  def validateDataInfo(dataInfo: DataInfo) =
     for {
       ref <- dataInfo.extraParams.memoiseRefs
     } {
       if (!dataInfo.classParamNames.map(_.value).contains(ref))
         abort(s"""There's no field called $ref""")
     }
-  }
 
   def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
-    val ctorParams = dataInfo.classParams.map(param =>
-      param"""private[this] var
-             ${Term.Name("_" + param.name.value)}: ${param.decltpe.get}""")
+    val ctorParams = dataInfo.classParamsWithTypes.map {
+      case (param, tpe) => param"""private[this] var
+               ${Term.Name("_" + param.value)}: $tpe"""
+    }
     // maybe it will be necessary to create unique names instead of prefix with "_"
+
     val modsToClasses = Seq(
-      "product" -> ctor"_root_.scala.Product",
+      "product"      -> ctor"_root_.scala.Product",
       "serializable" -> ctor"_root_.scala.Serializable"
     )
     val extendsClasses = modsToClasses.collect {
@@ -83,11 +86,13 @@ object DataImpl {
     val modsToClasses = Seq(
       "serializable" -> ctor"_root_.scala.Serializable"
     ) ++ (if (dataInfo.typeParams.isEmpty) {
-      Seq("companionExtends" ->
-        ctor"((..${dataInfo.classParamsTypes}) => ${dataInfo.dataType})")
-    } else {
-      Seq()
-    })
+            Seq(
+              "companionExtends" ->
+                ctor"((..${dataInfo.classParamsTypes}) => ${dataInfo.dataType})"
+            )
+          } else {
+            Seq()
+          })
 
     val extendsClasses = modsToClasses.collect {
       case (mod, ctor) if dataInfo.getMod(mod) => ctor
@@ -104,12 +109,16 @@ object DataImpl {
 
   def expand(clazz: Defn.Class,
              dataMods: Map[String, Boolean],
-             extraParams: ExtraParams): Term.Block = {
+             extraParams: ExtraParams): Term.Block =
     clazz match {
-      case cls@Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
+      case cls @ Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
         validateClass(ctor, tmpl, tparams)
         val dataInfo = DataInfo(
-          name, ctor.paramss.flatten, tparams, dataMods, extraParams
+          name,
+          ctor.paramss.flatten,
+          tparams,
+          dataMods,
+          extraParams
         )
         validateDataInfo(dataInfo)
 
@@ -142,18 +151,19 @@ object DataImpl {
           case (mod, bs) if dataInfo.getMod(mod) => bs
         }.flatten
 
-        val newClass = buildClass(dataInfo, builders.toList)
+        val newClass  = buildClass(dataInfo, builders.toList)
         val newObject = buildObject(dataInfo, builders.toList)
         //println((newClass, newObject).toString())
 
-        Term.Block(Seq(
-          newClass,
-          newObject
-        ))
+        Term.Block(
+          Seq(
+            newClass,
+            newObject
+          )
+        )
       case _ =>
         abort("@data must annotate a class without mods.")
     }
-  }
 }
 
 class data(product: Boolean = false,
@@ -165,7 +175,10 @@ class data(product: Boolean = false,
            memoiseToString: Boolean = false,
            memoiseStrong: Boolean = false,
            memoiseRefs: scala.Seq[scala.Symbol] = scala.Seq())
-  extends scala.annotation.StaticAnnotation {
+    extends scala.annotation.StaticAnnotation {
+
+  // workaround for https://github.com/scalameta/scalameta/issues/1038
+  val dummy = 'dummy
 
   inline def apply(defn: Any): Any = meta {
     val (dataMods, extraParams) = this match {
@@ -180,12 +193,12 @@ class data(product: Boolean = false,
 
         val memoiseRefs = args.collect {
           case Term.Arg.Named(
-            Term.Name("memoiseRefs"),
-            Term.Apply(Term.Name("Seq"),
-            symbols)
-          ) => symbols.collect {
-            case q"scala.Symbol(${Lit.String(sym)})" => sym
-          }
+              Term.Name("memoiseRefs"),
+              Term.Apply(Term.Name("Seq"), symbols)
+              ) =>
+            symbols.collect {
+              case q"scala.Symbol(${Lit.String(sym) })" => sym
+            }
         }.headOption.getOrElse(Seq())
 
         (mods, ExtraParams(memoiseRefs))
@@ -193,10 +206,12 @@ class data(product: Boolean = false,
     }
 
     defn match {
-      case Term.Block(Seq(
-        cls@Defn.Class(Seq(), name, Seq(), ctor, tmpl),
-        companion: Defn.Object
-      )) =>
+      case Term.Block(
+          Seq(
+            cls @ Defn.Class(Seq(), name, Seq(), ctor, tmpl),
+            companion: Defn.Object
+          )
+          ) =>
         abort("@data block")
       case clazz: Defn.Class => DataImpl.expand(clazz, dataMods, extraParams)
     }
