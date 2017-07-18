@@ -63,12 +63,8 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
 
   it should "implement Product" in {
     fooMeta.productPrefix should equal("FooMeta")
-    fooMeta.productIterator.toList should contain theSameElementsInOrderAs (List(
-      true,
-      "hello",
-      "world",
-      1
-    ))
+    fooMeta.productIterator.toList should contain theSameElementsInOrderAs
+      List(true, "hello", "world", 1)
   }
 
   it should "be serialisable" in {
@@ -112,10 +108,8 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
     T.cast(1L) shouldBe empty
     T.cast(fooMeta) shouldBe empty
     T.cast(FooMeta(true, "hello", 1, 1)) shouldBe empty
-    T.cast(FooMeta(true, "hello", 1L, 1)).value shouldBe FooMeta(true,
-                                                                 "hello",
-                                                                 1L,
-                                                                 1)
+    T.cast(FooMeta(true, "hello", 1L, 1)).value shouldBe
+      FooMeta(true, "hello", 1L, 1)
   }
 
   it should "allow user-land Semigroup (Generic) derivation" in {

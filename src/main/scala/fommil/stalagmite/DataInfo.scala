@@ -5,15 +5,62 @@ package fommil.stalagmite
 import scala.collection.immutable.Seq
 import scala.meta._
 
+object DataInfo {
+  def replaceTypeName(tpe: Type.Name,
+                      transform: Map[String, Type.Name]): Type.Name =
+    transform.getOrElse(tpe.value, tpe)
+
+  def replaceType(tpe: Type, transform: Map[String, Type.Name]): Type =
+    tpe match {
+      case t: Type.Name => replaceTypeName(t, transform)
+      case Type.Apply(tApply, tsApplied) =>
+        Type.Apply(
+          replaceType(tApply, transform),
+          tsApplied.map(replaceType(_, transform))
+        )
+      case Type.ApplyInfix(tApply1, tInfix, tApply2) =>
+        Type.ApplyInfix(
+          replaceType(tApply1, transform),
+          replaceTypeName(tInfix, transform),
+          replaceType(tApply2, transform),
+        )
+      case Type.With(tWith1, tWith2) =>
+        Type.With(
+          replaceType(tWith1, transform),
+          replaceType(tWith2, transform)
+        )
+      case Type.Function(tArgs, tOut) =>
+        Type.Function(
+          tArgs.map(replaceTypeArg(_, transform)),
+          replaceType(tOut, transform)
+        )
+      case Type.Tuple(ts) =>
+        Type.Tuple(
+          ts.map(replaceType(_, transform))
+        )
+      case _ => tpe // only basic cases for now
+    }
+
+  def replaceTypeArg(typeArg: Type.Arg,
+                     transform: Map[String, Type.Name]): Type.Arg =
+    typeArg match {
+      case Type.Arg.ByName(tpe) =>
+        Type.Arg.ByName(replaceType(tpe, transform))
+      case Type.Arg.Repeated(tpe) =>
+        Type.Arg.Repeated(replaceType(tpe, transform))
+      case t: Type =>
+        replaceType(t, transform)
+      case _ => typeArg
+    }
+}
+
 final case class ExtraParams(memoiseRefs: Seq[String] = Seq())
 
-final case class DataInfo(
-  name: Type.Name,
-  classParams: Seq[Term.Param],
-  typeParams: Seq[Type.Param],
-  dataMods: Map[String, Boolean],
-  extraParams: ExtraParams = ExtraParams()
-) {
+final case class DataInfo(name: Type.Name,
+                          classParams: Seq[Term.Param],
+                          typeParams: Seq[Type.Param],
+                          dataMods: Map[String, Boolean],
+                          extraParams: ExtraParams = ExtraParams()) {
   lazy val simpleTypeParams: Seq[Type.Param] = typeParams.map(
     tparam => tparam.copy(mods = Seq(), tbounds = Type.Bounds(None, None))
   )

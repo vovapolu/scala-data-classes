@@ -223,14 +223,31 @@ object DataStat {
 
   object DataCopyBuilder extends DataStatBuilder {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      val newTypes =
+        dataInfo.typeParams.map(tparam => Type.Name("N$" + tparam.name.value))
+      val oldToNewTypes =
+        dataInfo.typeParamsNames.map(_.value).zip(newTypes).toMap
+      val newTypeParams: Seq[Type.Param] = newTypes.map(
+        tpe =>
+          Type.Param(Seq(), tpe, Seq(), Type.Bounds(None, None), Seq(), Seq())
+      )
+      // I couldn't find way to do it as quasiquote
+
+      val newDataType = if (newTypeParams.nonEmpty) {
+        t"${dataInfo.name}[..$newTypes]"
+      } else {
+        t"${dataInfo.name}"
+      }
+
       val copyParams = dataInfo.classParamsWithTypes.map {
-        case (param, tpe) => param"$param: $tpe = this.$param"
+        case (param, tpe) =>
+          param"""$param: ${DataInfo.replaceType(tpe, oldToNewTypes)} =
+                 this.$param"""
       }
 
       Seq(
-        q"""def copy[..${dataInfo.simpleTypeParams}](
-              ..$copyParams): ${dataInfo.dataType} =
-            ${dataInfo.termName}(..${dataInfo.classParamNames})"""
+        q"""def copy[..$newTypeParams](..$copyParams): $newDataType =
+          ${dataInfo.dataCreating}"""
       )
     }
   }

@@ -75,7 +75,7 @@ class A(a: Boolean, s: String = "a", o: Option[Double])
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A
 
-    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable, TypeCase }
+    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable }
     import _root_.shapeless.labelled.{ FieldType, field }
     import _root_.shapeless.syntax.singleton._
 
@@ -85,6 +85,7 @@ class A(a: Boolean, s: String = "a", o: Option[Double])
 
     implicit def TypeableA(implicit `TOption[Double]`: Typeable[Option[Double]]): Typeable[A] = new Typeable[A] {
       override def cast(t: Any): Option[A] = {
+        import _root_.shapeless.TypeCase
         val `TC_Option[Double]` = TypeCase[Option[Double]]
         t match {
           case f @ A(a, s, `TC_Option[Double]`(o)) =>
