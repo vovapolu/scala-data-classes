@@ -1,10 +1,21 @@
 ![data and codata](https://pbs.twimg.com/media/C4puwPsVUAAPPW5.jpg)
 
-**STATUS: currently implementing, not released yet. This project is sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta)**
+**This project is sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta)**
 
 An alternative to `case class` and extensions for `sealed trait` giving much more control over the internal representation of ADTs for [Functional Programming in Scala](https://leanpub.com/fp-scala-mortals) style.
 
 The following features are currently being considered in [`src/test/scala/testing`](https://github.com/fommil/stalagmite/tree/master/src/test/scala/testing). If you have any further ideas, please comment on the issue tracker:
+
+## Beta Tester
+
+If you are brave enough to try out the regular `SNAPSHOT`, use
+
+```scala
+resolvers += Resolver.sonatypeRepo("snapshots")
+libraryDependencies += "com.fommil" %% "stalagmite" % "1.0.0-SNAPSHOT"
+```
+
+and report back any bugs or ideas that you have.
 
 ## `final case class` parity
 

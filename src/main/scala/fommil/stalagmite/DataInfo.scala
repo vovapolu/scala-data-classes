@@ -22,7 +22,7 @@ object DataInfo {
         Type.ApplyInfix(
           replaceType(tApply1, transform),
           replaceTypeName(tInfix, transform),
-          replaceType(tApply2, transform),
+          replaceType(tApply2, transform)
         )
       case Type.With(tWith1, tWith2) =>
         Type.With(
