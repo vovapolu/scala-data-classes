@@ -7,7 +7,10 @@ import scala.meta._
 
 object DataImpl {
 
-  import DataStat._
+  import stats.CaseClassStats._
+  import stats.MemoisationStats._
+  import stats.SerializableStats._
+  import stats.ShapelessStats._
 
   def validateClass(ctor: Ctor.Primary,
                     tmpl: Template,
@@ -56,7 +59,7 @@ object DataImpl {
         abort(s"""There's no field called $ref""")
     }
 
-  def buildClass(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
+  def buildClass(dataInfo: DataInfo, builders: Seq[DataStats]): Stat = {
     val ctorParams = dataInfo.classParamsWithTypes.map {
       case (param, tpe) => param"""private[this] var
                ${Term.Name("_" + param.value)}: $tpe"""
@@ -82,7 +85,7 @@ object DataImpl {
     }"""
   }
 
-  def buildObject(dataInfo: DataInfo, builders: Seq[DataStatBuilder]): Stat = {
+  def buildObject(dataInfo: DataInfo, builders: Seq[DataStats]): Stat = {
     val modsToClasses = Seq(
       "serializable" -> ctor"_root_.scala.Serializable"
     ) ++ (if (dataInfo.typeParams.isEmpty) {
@@ -122,32 +125,32 @@ object DataImpl {
         )
         validateDataInfo(dataInfo)
 
-        val modsToBuilders = Seq(
-          "product" -> Seq(DataProductMethodsBuilder),
+        val modsToStats = Seq(
+          "product" -> Seq(DataProductMethodsStats),
           "serializable" -> Seq(
-            DataWriteObjectBuilder,
-            DataReadObjectBuilder,
-            DataReadResolveBuilder
+            DataWriteObjectStats,
+            DataReadObjectStats,
+            DataReadResolveStats
           ),
           "shapeless" -> Seq(
-            DataShapelessBaseBuilder,
-            DataShapelessTypeableBuilder,
-            DataShapelessGenericsBuilder
+            DataShapelessBaseStats,
+            DataShapelessTypeableStats,
+            DataShapelessGenericsStats
           ),
           "memoise" -> Seq(
-            DataMemoiseBuilder
+            DataMemoiseStats
           )
         )
 
         val builders = Seq(
-          DataApplyBuilder,
-          DataUnapplyBuilder,
-          DataGettersBuilder,
-          DataEqualsBuilder,
-          DataHashCodeBuilder,
-          DataToStringBuilder,
-          DataCopyBuilder
-        ) ++ modsToBuilders.collect {
+          DataApplyStats,
+          DataUnapplyStats,
+          DataGettersStats,
+          DataEqualsStats,
+          DataHashCodeStats,
+          DataToStringStats,
+          DataCopyStats
+        ) ++ modsToStats.collect {
           case (mod, bs) if dataInfo.getMod(mod) => bs
         }.flatten
 

@@ -19,7 +19,7 @@ class OptimisedHeapSpec
     extends FlatSpec
     with ParallelTestExecution
     with GeneratorDrivenPropertyChecks {
-  val foo = Foo(Option(true), Option(false), Option("world"))
+  val foo = Foo(Option(true), Option(false), Option("world"), 42)
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSuccessful = PosInt(100))
@@ -28,15 +28,17 @@ class OptimisedHeapSpec
     foo.hashCode shouldBe 626589729
     foo should equal(foo)
     foo should not be theSameInstanceAs(
-      Foo(Option(true), Option(false), Option("world"))
+      Foo(Option(true), Option(false), Option("world"), 42)
     )
-    foo should not equal (Foo(Option(false), Option(false), Option("world")))
-    foo.toString should equal("Foo(Some(true),Some(false),Some(world))")
+    foo should not equal
+      Foo(Option(false), Option(false), Option("world"), 42)
+    foo.toString should equal("Foo(Some(true),Some(false),Some(world),42)")
     Foo.toString should equal("Foo")
   }
 
   it should "not expose its constructor" in {
-    """new Foo(Option(true), Option(false), Option("world"))""" shouldNot compile
+    """new Foo(
+      Option(true), Option(false), Option("world"), 42)""" shouldNot compile
 
     """new Foo()""" shouldNot compile
   }
@@ -45,32 +47,38 @@ class OptimisedHeapSpec
     foo.a.value should equal(true)
     foo.b.value should equal(false)
     foo.s.value should equal("world")
+    foo.i should equal(42)
   }
 
   it should "correctly return a wide range parameters as fields" in {
-    forAll { (a: Option[Boolean], b: Option[Boolean], s: Option[String]) =>
-      val f = Foo(a, b, s)
-      f.a should equal(a)
-      f.b should equal(b)
-      f.s should equal(s)
+    forAll {
+      (a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Int) =>
+        val f = Foo(a, b, s, i)
+        f.a should equal(a)
+        f.b should equal(b)
+        f.s should equal(s)
+        f.i should equal(i)
     }
   }
 
   it should "have a copy method" in {
     foo.copy(a = Option(false)) should equal(
-      Foo(Option(false), Option(false), Option("world"))
+      Foo(Option(false), Option(false), Option("world"), 42)
     )
     foo.copy(b = Option(true)) should equal(
-      Foo(Option(true), Option(true), Option("world"))
+      Foo(Option(true), Option(true), Option("world"), 42)
     )
     foo.copy(s = Option("foo")) should equal(
-      Foo(Option(true), Option(false), Option("foo"))
+      Foo(Option(true), Option(false), Option("foo"), 42)
+    )
+    foo.copy(i = 43) should equal(
+      Foo(Option(true), Option(false), Option("world"), 43)
     )
   }
 
   it should "have a pattern matcher" in {
     foo should matchPattern {
-      case Foo(Some(true), Some(false), Some("world")) =>
+      case Foo(Some(true), Some(false), Some("world"), 42) =>
     }
   }
 
@@ -110,7 +118,7 @@ class OptimisedHeapSpec
     val T = Typeable[Foo]
 
     T.describe should equal(
-      "Foo[Option[Boolean],Option[Boolean],Option[String]]"
+      "Foo[Option[Boolean],Option[Boolean],Option[String],Int]"
     )
 
     T.cast("hello") shouldBe empty
@@ -130,7 +138,7 @@ class OptimisedHeapSpec
     }
 
     (foo |+| foo) should equal(
-      Foo(Option(true), Option(true), Option("worldworld"))
+      Foo(Option(true), Option(true), Option("worldworld"), 84)
     )
   }
 
@@ -138,25 +146,27 @@ class OptimisedHeapSpec
     import spray.json._
     import fommil.sjs.FamilyFormats._
 
-    foo.toJson.compactPrint should equal("""{"a":true,"b":false,"s":"world"}""")
+    foo.toJson.compactPrint should equal(
+      """{"a":true,"b":false,"s":"world","i":42}"""
+    )
   }
 
   it should "not allow null or Some(null) parameters for optimised fields" in {
 
     intercept[NullPointerException] {
-      Foo(null, Option(true), Option("hello"))
+      Foo(null, Option(true), Option("hello"), 42)
     }
 
     intercept[NullPointerException] {
-      Foo(Option(true), null, Option("hello"))
+      Foo(Option(true), null, Option("hello"), 42)
     }
 
     intercept[NullPointerException] {
-      Foo(Option(true), Option(true), null)
+      Foo(Option(true), Option(true), null, 42)
     }
 
     intercept[NullPointerException] {
-      Foo(Option(true), Option(true), Some(null))
+      Foo(Option(true), Option(true), Some(null), 42)
     }
 
   }
