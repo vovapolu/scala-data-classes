@@ -62,18 +62,9 @@ The following features are independent, but can be combined:
 
 Further ideas for memoisation should go in [#6](https://github.com/fommil/stalagmite/issues/6)
 
-### Implementation Note
-
-It is not possible to write a cache on the JVM whose contents are garbage collected *iff* no longer referenced by anywhere else in the system:
-
-1. the user could be using weak / soft references.
-2. experiments showed that `WeakHashMap` is aggressively cleaned even when its keys are strongly referenced elsewhere. This may be a general problem with `WeakReference` and `SoftReference` (the latter to a lesser extent, but still without guarantees).
-
-Value and identity equivalence can only be guaranteed if a strong reference cache is used. The JVM would have to offer native support or GC hooks for this to work.
-
 See [#8](https://github.com/fommil/stalagmite/issues/8) for a way of speeding up `equals` for instances with value equality (but not reference equality), at the cost of even more heap.
 
-We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we really want is a `SoftReference` interner that uses a custom `Equality`.
+We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we want a `SoftReference` interner that uses a custom `Equality`.
 
 ## Optimise Heap
 
