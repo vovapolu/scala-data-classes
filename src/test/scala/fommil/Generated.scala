@@ -68,6 +68,11 @@ class Generated extends FlatSpec with ParallelTestExecution {
     checkGenFile("NoModsGen")
   }
 
+  "@data-generated class with only one field" should
+    "have correct definition" in {
+    checkGenFile("OneFieldGen", true)
+  }
+
   "@data-generated class" should "have case-class methods" in {
     checkGenFile("CaseClassParityGen")
     checkGenFile("CaseClassTypedParityGen")
