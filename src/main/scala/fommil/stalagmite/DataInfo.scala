@@ -52,6 +52,14 @@ object DataInfo {
         replaceType(t, transform)
       case _ => typeArg
     }
+
+  def isPrimitiveType(tpe: Type): Boolean =
+    tpe match {
+      case t"Boolean" | t"Byte" | t"Short" | t"Char" | t"Int" | t"Long" |
+          t"Float" | t"Double" =>
+        true
+      case _ => false
+    }
 }
 
 final case class ExtraParams(memoiseRefs: Seq[String] = Seq())
@@ -90,16 +98,19 @@ final case class DataInfo(name: Type.Name,
   lazy val termName     = Term.Name(name.value)
   lazy val dataCreating = q"$termName(..$classParamNames)"
 
-  case class BitPosition(optionBit: Option[Int],
-                         booleanBit: Option[Int],
-                         fieldByte: Option[Int],
-                         fieldSize: Option[Int])
+  // heap optimization methods
+
+  case class BitPosition(optionBit: Option[Int], booleanBit: Option[Int])
 
   lazy val bitPositions: List[BitPosition] = {
     val tempSizes = classParamsTypes.toList.map(tpe => {
       val (optionBit, typeWithoutOption) = tpe match {
-        case t"Option[$t]" if getMod("optimiseHeapOptions") => (1, t)
-        case t                                              => (0, t)
+        case t"Option[$t]"
+            if DataInfo.isPrimitiveType(t) &&
+              getMod("optimiseHeapOptions") =>
+          (1, t)
+        case t =>
+          (0, t)
       }
 
       val booleanBit = typeWithoutOption match {
@@ -107,51 +118,68 @@ final case class DataInfo(name: Type.Name,
         case _                                            => 0
       }
 
-      val fieldByteSize = if (getMod("optimiseHeapPrimitives")) {
-        typeWithoutOption match {
-          case t"Byte"   => 1
-          case t"Char"   => 1
-          case t"Short"  => 2
-          case t"Int"    => 4
-          case t"Float"  => 4
-          case t"Long"   => 8
-          case t"Double" => 8
-          case _         => 0
-        }
-      } else {
-        0
-      }
-
-      (optionBit, booleanBit, fieldByteSize)
+      (optionBit, booleanBit)
     })
 
-    val booleansAndOptionsBits = tempSizes.map(s => s._1 + s._2).sum
-    val reservedBytes = booleansAndOptionsBits / 8 +
-      (if (booleansAndOptionsBits % 8 != 0) 1 else 0)
-
-    def generateBitPosition(curSizes: List[(Int, Int, Int)],
-                            curReservedBit: Int,
-                            curByte: Int): List[BitPosition] =
+    def generateBitPosition(curSizes: List[(Int, Int)],
+                            curReservedBit: Int): List[BitPosition] =
       curSizes match {
         case head :: tail =>
           head match {
-            case (optionBit, booleanBit, fieldByteSize) =>
+            case (optionBit, booleanBit) =>
               BitPosition(
                 if (optionBit > 0) Some(curReservedBit) else None,
                 if (booleanBit > 0) Some(curReservedBit + optionBit)
                 else None,
-                if (fieldByteSize > 0) Some(curByte) else None,
-                if (fieldByteSize > 0) Some(fieldByteSize) else None
               ) :: generateBitPosition(
                 tail,
                 curReservedBit + optionBit + booleanBit,
-                curByte + fieldByteSize
               )
           }
         case _ => List.empty
       }
 
-    generateBitPosition(tempSizes, 0, reservedBytes)
+    generateBitPosition(tempSizes, 0)
+  }
+
+  lazy val hasBitmask: Boolean = classParamsTypes.exists {
+    case t"Option[$t]" if getMod("optimiseHeapOptions") => true
+    case t"Boolean" if getMod("optimiseHeapBooleans")   => true
+    case _                                              => false
+  }
+
+  lazy val requiredToPack: Boolean = classParamsTypes.exists {
+    case t"Option[$t]" if getMod("optimiseHeapOptions") => true
+    case t"Boolean" if getMod("optimiseHeapBooleans")   => true
+    case t"String" if getMod("optimiseHeapStrings")     => true
+    case _                                              => false
+  }
+
+  lazy val optimizedParams: Seq[(Term.Name, Type)] = {
+    val transformedParams = classParamsWithTypes.flatMap {
+      case (param, tpe) =>
+        val typeWithoutOption = tpe match {
+          case t"Option[$t]" if getMod("optimiseHeapOptions") => t
+          case t                                              => t
+        }
+
+        val transformedType = typeWithoutOption match {
+          case t"Boolean" if getMod("optimiseHeapBooleans") => None
+          case t"String" if getMod("optimiseHeapStrings") =>
+            Some(t"Array[Byte]")
+          case t => Some(t)
+        }
+
+        transformedType.map((param, _))
+    }
+
+    transformedParams ++ (
+      if (hasBitmask) {
+        Seq((Term.Name("bitmask"), t"Long"))
+      } else {
+        Seq()
+      }
+    )
   }
 
   def getMod(mod: String): Boolean = dataMods.getOrElse(mod, false)

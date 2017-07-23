@@ -49,20 +49,50 @@ object SerializableStats {
 
   object DataReadObjectStats extends DataStats {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
+      def constructReadTarget(param: Term.Name, read: Term) =
+        if (dataInfo.requiredToPack) {
+          q"val ${Pat.Var.Term(param)} = $read"
+        } else {
+          q"${Term.Name("_" + param.value)} = $read"
+        }
+
       val reads = dataInfo.classParamsWithTypes.map {
         case (param, tpe) =>
-          q"${Term.Name { "_" + param.value }} = ${tpe match {
-            case t"Boolean" => q"in.readBoolean()"
-            case t"Byte"    => q"in.readByte()"
-            case t"Short"   => q"in.readShort()"
-            case t"Char"    => q"in.readChar()"
-            case t"Int"     => q"in.readInt()"
-            case t"Long"    => q"in.readLong()"
-            case t"Float"   => q"in.readFloat()"
-            case t"Double"  => q"in.readDouble()"
-            case t"String"  => q"in.readUTF()"
-            case _          => q"in.readObject().asInstanceOf[$tpe]"
-          }}"
+          constructReadTarget(
+            param,
+            tpe match {
+              case t"Boolean" => q"in.readBoolean()"
+              case t"Byte"    => q"in.readByte()"
+              case t"Short"   => q"in.readShort()"
+              case t"Char"    => q"in.readChar()"
+              case t"Int"     => q"in.readInt()"
+              case t"Long"    => q"in.readLong()"
+              case t"Float"   => q"in.readFloat()"
+              case t"Double"  => q"in.readDouble()"
+              case t"String"  => q"in.readUTF()"
+              case _          => q"in.readObject().asInstanceOf[$tpe]"
+            }
+          )
+      }
+
+      val optionalPack = if (dataInfo.requiredToPack) {
+        val pack =
+          q"""
+              val packed = ${dataInfo.termName}
+                .pack(..${dataInfo.classParamNames})
+          """
+        val fieldsAssignments = dataInfo.optimizedParams.unzip._1 match {
+          case Seq(p1) => Seq(q"${Term.Name("_" + p1.value)} = packed")
+          case ps =>
+            ps.zipWithIndex.map {
+              case (param, ind) =>
+                q"""${Term.Name("_" + param.value)} =
+                   packed.${Term.Name("_" + ind)}"""
+            }
+        }
+        pack +: fieldsAssignments
+      } else {
+        Seq()
       }
 
       Seq(q"""
@@ -70,6 +100,7 @@ object SerializableStats {
         @throws[_root_.java.lang.ClassNotFoundException]
         private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
           ..$reads
+          ..$optionalPack
         }
         """)
     }
