@@ -9,7 +9,6 @@ object DataInfo {
   def replaceTypeName(tpe: Type.Name,
                       transform: Map[String, Type.Name]): Type.Name =
     transform.getOrElse(tpe.value, tpe)
-
   def replaceType(tpe: Type, transform: Map[String, Type.Name]): Type =
     tpe match {
       case t: Type.Name => replaceTypeName(t, transform)
@@ -22,7 +21,7 @@ object DataInfo {
         Type.ApplyInfix(
           replaceType(tApply1, transform),
           replaceTypeName(tInfix, transform),
-          replaceType(tApply2, transform),
+          replaceType(tApply2, transform)
         )
       case Type.With(tWith1, tWith2) =>
         Type.With(

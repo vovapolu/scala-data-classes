@@ -1,10 +1,21 @@
 ![data and codata](https://pbs.twimg.com/media/C4puwPsVUAAPPW5.jpg)
 
-**STATUS: currently implementing, not released yet. This project is sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta)**
+**This project is sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta)**
 
 An alternative to `case class` and extensions for `sealed trait` giving much more control over the internal representation of ADTs for [Functional Programming in Scala](https://leanpub.com/fp-scala-mortals) style.
 
 The following features are currently being considered in [`src/test/scala/testing`](https://github.com/fommil/stalagmite/tree/master/src/test/scala/testing). If you have any further ideas, please comment on the issue tracker:
+
+## Beta Tester
+
+If you are brave enough to try out the regular `SNAPSHOT`, use
+
+```scala
+resolvers += Resolver.sonatypeRepo("snapshots")
+libraryDependencies += "com.fommil" %% "stalagmite" % "1.0.0-SNAPSHOT"
+```
+
+and report back any bugs or ideas that you have.
 
 ## `final case class` parity
 
@@ -51,18 +62,9 @@ The following features are independent, but can be combined:
 
 Further ideas for memoisation should go in [#6](https://github.com/fommil/stalagmite/issues/6)
 
-### Implementation Note
-
-It is not possible to write a cache on the JVM whose contents are garbage collected *iff* no longer referenced by anywhere else in the system:
-
-1. the user could be using weak / soft references.
-2. experiments showed that `WeakHashMap` is aggressively cleaned even when its keys are strongly referenced elsewhere. This may be a general problem with `WeakReference` and `SoftReference` (the latter to a lesser extent, but still without guarantees).
-
-Value and identity equivalence can only be guaranteed if a strong reference cache is used. The JVM would have to offer native support or GC hooks for this to work.
-
 See [#8](https://github.com/fommil/stalagmite/issues/8) for a way of speeding up `equals` for instances with value equality (but not reference equality), at the cost of even more heap.
 
-We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we really want is a `SoftReference` interner that uses a custom `Equality`.
+We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we want a `SoftReference` interner that uses a custom `Equality`.
 
 ## Optimise Heap
 
