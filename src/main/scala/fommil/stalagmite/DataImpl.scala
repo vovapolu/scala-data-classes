@@ -11,6 +11,7 @@ object DataImpl {
   import stats.MemoisationStats._
   import stats.SerializableStats._
   import stats.ShapelessStats._
+  import stats.HeapOptimizationStats._
 
   def validateClass(ctor: Ctor.Primary,
                     tmpl: Template,
@@ -60,11 +61,15 @@ object DataImpl {
     }
 
   def buildClass(dataInfo: DataInfo, builders: Seq[DataStats]): Stat = {
-    val ctorParams = dataInfo.classParamsWithTypes.map {
+    val actualFields = if (dataInfo.requiredToPack) {
+      dataInfo.optimizedParams
+    } else {
+      dataInfo.classParamsWithTypes
+    }
+    val ctorParams = actualFields.map {
       case (param, tpe) => param"""private[this] var
                ${Term.Name("_" + param.value)}: $tpe"""
     }
-    // maybe it will be necessary to create unique names instead of prefix with "_"
 
     val modsToClasses = Seq(
       "product"      -> ctor"_root_.scala.Product",
@@ -145,14 +150,15 @@ object DataImpl {
         val builders = Seq(
           DataApplyStats,
           DataUnapplyStats,
-          DataGettersStats,
+          if (dataInfo.requiredToPack) UnpackGettersStats else DataGettersStats,
           DataEqualsStats,
           DataHashCodeStats,
           DataToStringStats,
           DataCopyStats
         ) ++ modsToStats.collect {
           case (mod, bs) if dataInfo.getMod(mod) => bs
-        }.flatten
+        }.flatten ++
+          (if (dataInfo.requiredToPack) Seq(PackStats) else Seq())
 
         val newClass  = buildClass(dataInfo, builders.toList)
         val newObject = buildObject(dataInfo, builders.toList)

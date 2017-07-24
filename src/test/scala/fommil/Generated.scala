@@ -78,8 +78,14 @@ class Generated extends FlatSpec with ParallelTestExecution {
     checkGenFile("CaseClassTypedParityGen")
   }
 
-  "@data-generated class with memoising" should "have cache, corresponding apply method" in {
+  "@data-generated class with memoising" should
+    "have cache, corresponding apply method" in {
     checkGenFile("MemoisedGen")
     checkGenFile("StronglyMemoisedGen")
+  }
+
+  "@data-generated class with heap optimization" should
+    "have pack method and needed logic in apply, readObject and getters" in {
+    checkGenFile("HeapOptimizationGen", true)
   }
 }

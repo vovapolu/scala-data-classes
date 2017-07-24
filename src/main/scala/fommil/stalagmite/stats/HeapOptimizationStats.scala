@@ -7,6 +7,39 @@ import scala.collection.immutable.Seq
 import scala.meta._
 
 object HeapOptimizationStats {
+
+  /**
+   * @param args Constructor arguments before packing
+   * @return Packing stats, new packed arguments
+   */
+  def specialApplyPart(dataInfo: DataInfo,
+                       args: Seq[Term]): (Seq[Stat], Seq[Term]) =
+    (Seq(q"val packed = pack(..$args)"),
+     dataInfo.optimizedParams.indices
+       .map(ind => q"packed.${Term.Name("_" + ind)}"))
+
+  /**
+   * Special logic for `readObject` method for packing case
+   * @return Packing stats
+   */
+  def specialReadObjectPart(dataInfo: DataInfo): Seq[Stat] = {
+    val pack =
+      q"""
+          val packed = ${dataInfo.termName}
+            .pack(..${dataInfo.classParamNames})
+        """
+    val fieldsAssignments = dataInfo.optimizedParams.unzip._1 match {
+      case Seq(p1) => Seq(q"${Term.Name("_" + p1.value)} = packed")
+      case ps =>
+        ps.zipWithIndex.map {
+          case (param, ind) =>
+            q"""${Term.Name("_" + param.value)} =
+                   packed.${Term.Name("_" + ind)}"""
+        }
+    }
+    pack +: fieldsAssignments
+  }
+
   object UnpackGettersStats extends DataStats {
     override def classStats(dataInfo: DataInfo): Seq[Stat] =
       dataInfo.classParamsWithTypes.zip(dataInfo.bitPositions).map {

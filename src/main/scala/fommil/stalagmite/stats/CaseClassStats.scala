@@ -20,58 +20,33 @@ object CaseClassStats {
           }
       }
 
-      val applyBody = if (dataInfo.getMod("memoise")) {
-        val memoisedParams = dataInfo.classParamsWithTypes.filter {
-          case (param, _) =>
-            dataInfo.extraParams.memoiseRefs.contains(param.value)
-        }.map {
-          case (param, tpe) =>
-            q"""val ${Pat.Var.Term(Term.Name(param.value + "_memoised"))} =
-               memoisedRef_cache.intern($param).asInstanceOf[$tpe]"""
-        }
-
-        val argsWithMemoised = dataInfo.classParamNames.map(
-          param =>
-            if (dataInfo.extraParams.memoiseRefs.contains(param.value)) {
-              Term.Name(param.value + "_memoised")
-            } else {
-              param
-          }
-        )
-
-        val interning = if (dataInfo.getMod("memoiseStrong")) {
-          val nameWithValueEquality =
-            Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")
-          val wrapperCreating = if (dataInfo.typeParams.nonEmpty) {
-            q"new $nameWithValueEquality[..${dataInfo.typeParamsNames}](safe)"
-          } else {
-            q"new $nameWithValueEquality(safe)"
-          }
-          q"memoised_cache.intern($wrapperCreating).d"
+      val (initStats, ctorArgs, finishStats) =
+        if (dataInfo.getMod("memoise")) {
+          MemoisationStats.specialApplyPart(dataInfo)
         } else {
-          q"memoised_cache.intern(safe)"
+          (Seq(),
+           dataInfo.classParamNames,
+           Seq(q"created.synchronized(created)"))
         }
 
-        memoisedParams ++ Seq(
-          q"""val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
-             ..$argsWithMemoised)""",
-          q"val safe = created.synchronized(created)",
-          interning
-        )
+      val (packStats, packedArgs) = if (dataInfo.requiredToPack) {
+        HeapOptimizationStats.specialApplyPart(dataInfo, ctorArgs)
       } else {
-        Seq(
-          q"""val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
-              ..${dataInfo.classParamNames})""",
-          q"created.synchronized(created)"
-        )
+        (Seq(), ctorArgs)
       }
 
       Seq(
         q"""def apply[..${dataInfo.simpleTypeParams}](
             ..$params
           ): ${dataInfo.dataType} = {
-          ..$applyBody
+          ..$initStats
+          ..$packStats
+          ..${Seq(q"""val created =
+               new ${Ctor.Ref.Name(dataInfo.name.value)}(..$packedArgs)""")}
+          ..$finishStats
         }"""
+        // probably a bug in the parser:
+        // single expression between list expansion (..$list) can't be parsed
       )
     }
   }

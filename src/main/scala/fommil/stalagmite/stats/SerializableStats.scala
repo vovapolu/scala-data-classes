@@ -76,21 +76,7 @@ object SerializableStats {
       }
 
       val optionalPack = if (dataInfo.requiredToPack) {
-        val pack =
-          q"""
-              val packed = ${dataInfo.termName}
-                .pack(..${dataInfo.classParamNames})
-          """
-        val fieldsAssignments = dataInfo.optimizedParams.unzip._1 match {
-          case Seq(p1) => Seq(q"${Term.Name("_" + p1.value)} = packed")
-          case ps =>
-            ps.zipWithIndex.map {
-              case (param, ind) =>
-                q"""${Term.Name("_" + param.value)} =
-                   packed.${Term.Name("_" + ind)}"""
-            }
-        }
-        pack +: fieldsAssignments
+        HeapOptimizationStats.specialReadObjectPart(dataInfo)
       } else {
         Seq()
       }
