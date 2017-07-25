@@ -183,7 +183,10 @@ class data(product: Boolean = false,
            memoiseHashCode: Boolean = false,
            memoiseToString: Boolean = false,
            memoiseStrong: Boolean = false,
-           memoiseRefs: scala.Seq[scala.Symbol] = scala.Seq())
+           memoiseRefs: scala.Seq[scala.Symbol] = scala.Seq(),
+           optimiseHeapOptions: Boolean = false,
+           optimiseHeapBooleans: Boolean = false,
+           optimiseHeapStrings: Boolean = false)
     extends scala.annotation.StaticAnnotation {
 
   // workaround for https://github.com/scalameta/scalameta/issues/1038

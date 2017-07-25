@@ -18,7 +18,8 @@ class MemoisedSpec extends FlatSpec with ParallelTestExecution {
   val foo     = Foo(true, "hello")
   val fooMeta = FooMetaMemoised(true, "hello")
 
-  "@data(memoised) class Foo" should "have equals, hashCode and toString defined" in {
+  "@data(memoised) class Foo" should
+    "have equals, hashCode and toString defined" in {
     fooMeta.hashCode shouldBe 1289111417
     fooMeta should equal(fooMeta)
     fooMeta should be theSameInstanceAs FooMetaMemoised(true, "hello")

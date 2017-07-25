@@ -34,7 +34,7 @@ object ShapelessStats {
           case tname: Type.Name =>
             dataInfo.typeParams.map(_.name.value).contains(tname.value)
           case _ =>
-            true // there are more cases, but it's working with basic types at least
+            true // there are more cases, but it handles basic types at least
         }
 
       val distinctClassParamsTypes = Seq(
@@ -42,17 +42,29 @@ object ShapelessStats {
           .groupBy(_.toString())
           .values
           .collect { case head :: _ => head }
-          .toList: _*
+          .toList
+          .filter(isTypeParamOrHasTypeParams): _*
       )
-
-      val implicitTypeables = distinctClassParamsTypes
-        .filter(isTypeParamOrHasTypeParams)
-        .map(tpe => param"implicit ${Term.Name(s"T$tpe")}: Typeable[$tpe]")
+      val typesToTypeCasesNames =
+        distinctClassParamsTypes.zipWithIndex.map {
+          case (tpe, ind) => (tpe.toString(), Term.Name(s"TC$ind"))
+        }.toMap
       val typeCases = distinctClassParamsTypes
-        .filter(isTypeParamOrHasTypeParams)
         .map(
-          tpe => q"val ${Pat.Var.Term(Term.Name(s"TC_$tpe"))} = TypeCase[$tpe]"
+          tpe => q"""val ${Pat.Var.Term(typesToTypeCasesNames(s"$tpe"))}
+               = TypeCase[$tpe]"""
         )
+
+      val typesToTypeableNames =
+        distinctClassParamsTypes.zipWithIndex.map {
+          case (tpe, ind) => (tpe.toString(), Term.Name(s"T$ind"))
+        }.toMap
+      val implicitTypeables = distinctClassParamsTypes
+        .map(
+          tpe =>
+            param"implicit ${typesToTypeableNames(s"$tpe")}: Typeable[$tpe]"
+        )
+
       val typeCasesWithImport = if (typeCases.nonEmpty) {
         q"import _root_.shapeless.TypeCase" +: typeCases
       } else {
@@ -62,7 +74,7 @@ object ShapelessStats {
         val args = dataInfo.classParamsWithTypes.map {
           case (param, tpe) =>
             if (isTypeParamOrHasTypeParams(tpe)) {
-              p"${Term.Name(s"TC_$tpe")}(${Pat.Var.Term(param)})"
+              p"${typesToTypeCasesNames(s"$tpe")}(${Pat.Var.Term(param)})"
             } else {
               p"${Pat.Var.Term(param)}"
             }
@@ -73,7 +85,7 @@ object ShapelessStats {
       val describe = {
         def getTypeDescribe(tpe: Type): Term =
           if (isTypeParamOrHasTypeParams(tpe)) {
-            q"${Term.Name(s"T$tpe")}.describe"
+            q"${typesToTypeableNames(s"$tpe")}.describe"
           } else {
             Lit.String(tpe.toString())
           }

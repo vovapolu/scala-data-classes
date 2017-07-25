@@ -16,7 +16,7 @@ object HeapOptimizationStats {
                        args: Seq[Term]): (Seq[Stat], Seq[Term]) =
     (Seq(q"val packed = pack(..$args)"),
      dataInfo.optimizedParams.indices
-       .map(ind => q"packed.${Term.Name("_" + ind)}"))
+       .map(ind => q"packed.${Term.Name(s"_${ind + 1}")}"))
 
   /**
    * Special logic for `readObject` method for packing case
@@ -34,7 +34,7 @@ object HeapOptimizationStats {
         ps.zipWithIndex.map {
           case (param, ind) =>
             q"""${Term.Name("_" + param.value)} =
-                   packed.${Term.Name("_" + ind)}"""
+                   packed.${Term.Name(s"_${ind + 1}")}"""
         }
     }
     pack +: fieldsAssignments
@@ -62,13 +62,14 @@ object HeapOptimizationStats {
               }
           }
 
+          @SuppressWarnings(Array("org.wartremover.warts.Null"))
           val fullGetter = bitPos.optionBit match {
             case Some(oBit) =>
               q"""
                  if ((_bitmask & (1 << ${Lit.Int(oBit)})) != 0) {
                    None
                  } else {
-                   $fieldGetter
+                   Some($fieldGetter)
                  }
                """
             case None =>
@@ -123,6 +124,7 @@ object HeapOptimizationStats {
               }
           }
 
+          @SuppressWarnings(Array("org.wartremover.warts.Null"))
           val fullPack: Term = bitPos.optionBit match {
             case Some(oBit) =>
               q"""

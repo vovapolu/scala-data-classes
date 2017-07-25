@@ -9,7 +9,8 @@ import org.scalatest.Matchers._
 import fommil.stalagmite.data
 
 class DataClassSpec extends FlatSpec with ParallelTestExecution {
-  "@data class" should "be defined without methods, modifiers and var params" in {
+  "@data class" should
+    "be defined without methods, modifiers and var params" in {
     """@data class A(a: Int)""" should compile
     """@data class A(a: Int = 1)""" should compile
     """@data class A(a: Int = 1, b: Int)""" should compile

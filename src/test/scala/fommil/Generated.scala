@@ -70,7 +70,7 @@ class Generated extends FlatSpec with ParallelTestExecution {
 
   "@data-generated class with only one field" should
     "have correct definition" in {
-    checkGenFile("OneFieldGen", true)
+    checkGenFile("OneFieldGen")
   }
 
   "@data-generated class" should "have case-class methods" in {
@@ -86,6 +86,6 @@ class Generated extends FlatSpec with ParallelTestExecution {
 
   "@data-generated class with heap optimization" should
     "have pack method and needed logic in apply, readObject and getters" in {
-    checkGenFile("HeapOptimizationGen", true)
+    checkGenFile("HeapOptimizationGen")
   }
 }

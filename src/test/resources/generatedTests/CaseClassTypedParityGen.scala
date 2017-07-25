@@ -84,18 +84,18 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
     val s_tpe = Symbol("s").narrow
     val xy_tpe = Symbol("xy").narrow
 
-    implicit def TypeableA[X, Y](implicit `TEither[X, Option[Y]]`: Typeable[Either[X, Option[Y]]]): Typeable[A[X, Y]] = new Typeable[A[X, Y]] {
+    implicit def TypeableA[X, Y](implicit T0: Typeable[Either[X, Option[Y]]]): Typeable[A[X, Y]] = new Typeable[A[X, Y]] {
       override def cast(t: Any): Option[A[X, Y]] = {
         import _root_.shapeless.TypeCase
-        val `TC_Either[X, Option[Y]]` = TypeCase[Either[X, Option[Y]]]
+        val TC0 = TypeCase[Either[X, Option[Y]]]
         t match {
-          case f @ A(a, s, `TC_Either[X, Option[Y]]`(xy)) =>
+          case f @ A(a, s, TC0(xy)) =>
             Some(A(a, s, xy))
           case _ =>
             None
         }
       }
-      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + `TEither[X, Option[Y]]`.describe) + "]"
+      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + T0.describe) + "]"
     }
 
     implicit def GenericA[X, Y]: Generic.Aux[A[X, Y], Boolean :: String :: Either[X, Option[Y]] :: HNil] = new Generic[A[X, Y]] {

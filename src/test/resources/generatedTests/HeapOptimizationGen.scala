@@ -1,4 +1,4 @@
-//optimiseHeapOptions optimiseHeapBooleans optimiseHeapStrings memoise serializable
+//optimiseHeapOptions optimiseHeapBooleans optimiseHeapStrings memoise serializable shapeless
 //memoiseRefs s
 class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
 //---
@@ -10,13 +10,13 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
     def a: Option[Boolean] = if ((_bitmask & 1 << 0) != 0) {
       None
     } else {
-      (_bitmask & 1 << 1) != 0
+      Some((_bitmask & 1 << 1) != 0)
     }
 
     def b: Option[Boolean] = if ((_bitmask & 1 << 2) != 0) {
       None
     } else {
-      (_bitmask & 1 << 3) != 0
+      Some((_bitmask & 1 << 3) != 0)
     }
 
     def s: Option[String] = if (this._s == null) {
@@ -51,8 +51,8 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
       val b = in.readObject().asInstanceOf[Option[Boolean]]
       val s = in.readObject().asInstanceOf[Option[String]]
       val packed = Foo.pack(a, b, s)
-      _s = packed._0
-      _bitmask = packed._1
+      _s = packed._1
+      _bitmask = packed._2
     }
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = Foo(a, b, s)
@@ -67,7 +67,7 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
     def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String]): Foo = {
       val s_memoised = memoisedRef_cache.intern(s).asInstanceOf[Option[String]]
       val packed = pack(a, b, s_memoised)
-      val created = new Foo(packed._0, packed._1)
+      val created = new Foo(packed._1, packed._2)
       val safe = created.synchronized(created)
       memoised_cache.intern(safe)
     }
@@ -82,6 +82,42 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String])
     private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = Foo
+
+    import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable }
+    import _root_.shapeless.labelled.{ FieldType, field }
+    import _root_.shapeless.syntax.singleton._
+
+    val a_tpe = Symbol("a").narrow
+    val b_tpe = Symbol("b").narrow
+    val s_tpe = Symbol("s").narrow
+
+    implicit def TypeableFoo(implicit T0: Typeable[Option[String]], T1: Typeable[Option[Boolean]]): Typeable[Foo] = new Typeable[Foo] {
+      override def cast(t: Any): Option[Foo] = {
+        import _root_.shapeless.TypeCase
+        val TC0 = TypeCase[Option[String]]
+        val TC1 = TypeCase[Option[Boolean]]
+        t match {
+          case f @ Foo(TC1(a), TC1(b), TC0(s)) =>
+        Some(Foo(a, b, s))
+          case _ =>
+            None
+        }
+      }
+      override def describe: String = "Foo[" + (T1.describe + "," + T1.describe + "," + T0.describe) + "]"
+    }
+    implicit def GenericFoo: Generic.Aux[Foo, Option[Boolean] :: Option[Boolean] :: Option[String] :: HNil] = new Generic[Foo] {
+      override type Repr = Option[Boolean] :: Option[Boolean] :: Option[String] :: HNil
+      override def to(f: Foo): Repr = LabelledGenericFoo.to(f)
+      override def from(r: Repr): Foo = r match {
+        case a :: b :: s :: HNil =>
+          Foo(a, b, s)
+      }
+    }
+    implicit def LabelledGenericFoo: LabelledGeneric.Aux[Foo, FieldType[a_tpe.type, Option[Boolean]] :: FieldType[b_tpe.type, Option[Boolean]] :: FieldType[s_tpe.type, Option[String]] :: HNil] = new LabelledGeneric[Foo] {
+      override type Repr = FieldType[a_tpe.type, Option[Boolean]] :: FieldType[b_tpe.type, Option[Boolean]] :: FieldType[s_tpe.type, Option[String]] :: HNil
+      override def to(f: Foo): Repr = field[a_tpe.type](f.a) :: field[b_tpe.type](f.b) :: field[s_tpe.type](f.s) :: HNil
+      override def from(r: Repr): Foo = GenericFoo.from(r)
+    }
 
     private[this] val memoised_cache = _root_.com.google.common.collect.Interners.newWeakInterner[Foo]()
     private[this] val memoisedRef_cache = _root_.com.google.common.collect.Interners.newWeakInterner[AnyRef]()

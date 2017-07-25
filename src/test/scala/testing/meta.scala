@@ -24,3 +24,16 @@ class FooMetaMemoised(a: Boolean, s: String)
   memoiseRefs = Seq('s)
 )
 class FooMetaMemoisedWeak(a: Boolean, s: String)
+
+@data(
+  optimiseHeapOptions = true,
+  optimiseHeapBooleans = true,
+  optimiseHeapStrings = true,
+  product = true,
+  serializable = true,
+  checkSerializable = true,
+  shapeless = true
+)
+class FooMetaOptimiseHeap(a: Option[Boolean],
+                          b: Option[Boolean],
+                          s: Option[String])
