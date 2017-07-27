@@ -84,7 +84,7 @@ object DataMods {
       collectMod("optimiseHeapBooleans"),
       collectMod("optimiseHeapStrings"),
       pairs.collect {
-        case ("memoiseRefs", refs: Seq[String]) => refs
+        case ("memoiseRefs", refs: Seq[String @unchecked]) => refs
       }.headOption.getOrElse(Seq())
     )
   }
