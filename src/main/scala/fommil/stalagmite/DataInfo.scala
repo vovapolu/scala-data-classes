@@ -61,13 +61,53 @@ object DataInfo {
     }
 }
 
-final case class ExtraParams(memoiseRefs: Seq[String] = Seq())
+object DataMods {
+  def fromPairs(pairs: Seq[(String, Any)],
+                applyDefaults: Boolean = true): DataMods = {
+
+    def collectMod(mod: String, defaultParam: Boolean = false): Boolean =
+      pairs.collect {
+        case (`mod`, b: Boolean) => b
+      }.headOption.getOrElse(defaultParam)
+
+    DataMods(
+      collectMod("product"),
+      collectMod("checkSerializable", applyDefaults),
+      collectMod("companionExtends"),
+      collectMod("serializable", applyDefaults),
+      collectMod("shapeless", applyDefaults),
+      collectMod("memoise"),
+      collectMod("memoiseHashCode"),
+      collectMod("memoiseToString"),
+      collectMod("memoiseStrong"),
+      collectMod("optimiseHeapOptions"),
+      collectMod("optimiseHeapBooleans"),
+      collectMod("optimiseHeapStrings"),
+      pairs.collect {
+        case ("memoiseRefs", refs: Seq[String]) => refs
+      }.headOption.getOrElse(Seq())
+    )
+  }
+}
+
+final case class DataMods(product: Boolean = false,
+                          checkSerializable: Boolean = true,
+                          companionExtends: Boolean = false,
+                          serializable: Boolean = true,
+                          shapeless: Boolean = true,
+                          memoise: Boolean = false,
+                          memoiseHashCode: Boolean = false,
+                          memoiseToString: Boolean = false,
+                          memoiseStrong: Boolean = false,
+                          optimiseHeapOptions: Boolean = false,
+                          optimiseHeapBooleans: Boolean = false,
+                          optimiseHeapStrings: Boolean = false,
+                          memoiseRefs: Seq[String] = Seq())
 
 final case class DataInfo(name: Type.Name,
                           classParams: Seq[Term.Param],
                           typeParams: Seq[Type.Param],
-                          dataMods: Map[String, Boolean],
-                          extraParams: ExtraParams = ExtraParams()) {
+                          dataMods: DataMods) {
   lazy val simpleTypeParams: Seq[Type.Param] = typeParams.map(
     tparam => tparam.copy(mods = Seq(), tbounds = Type.Bounds(None, None))
   )
@@ -106,15 +146,15 @@ final case class DataInfo(name: Type.Name,
       val (optionBit, typeWithoutOption) = tpe match {
         case t"Option[$t]"
             if DataInfo.isPrimitiveType(t) &&
-              getMod("optimiseHeapOptions") =>
+              dataMods.optimiseHeapOptions =>
           (1, t)
         case t =>
           (0, t)
       }
 
       val booleanBit = typeWithoutOption match {
-        case t"Boolean" if getMod("optimiseHeapBooleans") => 1
-        case _                                            => 0
+        case t"Boolean" if dataMods.optimiseHeapBooleans => 1
+        case _                                           => 0
       }
 
       (optionBit, booleanBit)
@@ -142,29 +182,29 @@ final case class DataInfo(name: Type.Name,
   }
 
   lazy val hasBitmask: Boolean = classParamsTypes.exists {
-    case t"Option[$t]" if getMod("optimiseHeapOptions") => true
-    case t"Boolean" if getMod("optimiseHeapBooleans")   => true
-    case _                                              => false
+    case t"Option[$t]" if dataMods.optimiseHeapOptions => true
+    case t"Boolean" if dataMods.optimiseHeapBooleans   => true
+    case _                                             => false
   }
 
   lazy val requiredToPack: Boolean = classParamsTypes.exists {
-    case t"Option[$t]" if getMod("optimiseHeapOptions") => true
-    case t"Boolean" if getMod("optimiseHeapBooleans")   => true
-    case t"String" if getMod("optimiseHeapStrings")     => true
-    case _                                              => false
+    case t"Option[$t]" if dataMods.optimiseHeapOptions => true
+    case t"Boolean" if dataMods.optimiseHeapBooleans   => true
+    case t"String" if dataMods.optimiseHeapStrings     => true
+    case _                                             => false
   }
 
   lazy val optimizedParams: Seq[(Term.Name, Type)] = {
     val transformedParams = classParamsWithTypes.flatMap {
       case (param, tpe) =>
         val typeWithoutOption = tpe match {
-          case t"Option[$t]" if getMod("optimiseHeapOptions") => t
-          case t                                              => t
+          case t"Option[$t]" if dataMods.optimiseHeapOptions => t
+          case t                                             => t
         }
 
         val transformedType = typeWithoutOption match {
-          case t"Boolean" if getMod("optimiseHeapBooleans") => None
-          case t"String" if getMod("optimiseHeapStrings") =>
+          case t"Boolean" if dataMods.optimiseHeapBooleans => None
+          case t"String" if dataMods.optimiseHeapStrings =>
             Some(t"Array[Byte]")
           case t => Some(t)
         }
@@ -180,6 +220,4 @@ final case class DataInfo(name: Type.Name,
       }
     )
   }
-
-  def getMod(mod: String): Boolean = dataMods.getOrElse(mod, false)
 }

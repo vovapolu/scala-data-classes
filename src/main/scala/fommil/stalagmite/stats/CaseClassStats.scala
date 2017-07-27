@@ -21,7 +21,7 @@ object CaseClassStats {
       }
 
       val (initStats, ctorArgs, finishStats) =
-        if (dataInfo.getMod("memoise")) {
+        if (dataInfo.dataMods.memoise) {
           MemoisationStats.specialApplyPart(dataInfo)
         } else {
           (Seq(),
@@ -92,13 +92,13 @@ object CaseClassStats {
         case Seq(eq1, rest @ _*) =>
           rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
       }
-      val thatEqual = if (dataInfo.getMod("memoiseHashCode")) {
+      val thatEqual = if (dataInfo.dataMods.memoiseHashCode) {
         q"(this eq that) || (this.hashCode == that.hashCode && $eqsWithAnds)"
       } else {
         q"(this eq that) || ($eqsWithAnds)"
       }
 
-      if (dataInfo.getMod("memoiseStrong")) {
+      if (dataInfo.dataMods.memoiseStrong) {
         Seq()
       } else {
         Seq(
@@ -150,7 +150,7 @@ object CaseClassStats {
       }
 
       Seq(
-        if (dataInfo.getMod("memoiseHashCode")) {
+        if (dataInfo.dataMods.memoiseHashCode) {
           q"override val hashCode: Int = $hashCodeExpr"
         } else {
           q"override def hashCode: Int = $hashCodeExpr"
@@ -179,7 +179,7 @@ object CaseClassStats {
            $paramsToString + ${Lit.String(")")}"""
 
       Seq(
-        if (dataInfo.getMod("memoiseToString")) {
+        if (dataInfo.dataMods.memoiseToString) {
           q"override val toString: String = $toStringBody"
         } else {
           q"override def toString: String = $toStringBody"

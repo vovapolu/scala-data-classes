@@ -47,15 +47,15 @@ object HeapOptimizationStats {
           val fieldName = Term.Name("_" + param.value)
 
           val typeWithoutOption = tpe match {
-            case t"Option[$t]" if dataInfo.getMod("optimiseHeapOptions") => t
-            case t                                                       => t
+            case t"Option[$t]" if dataInfo.dataMods.optimiseHeapOptions => t
+            case t                                                      => t
           }
 
           val fieldGetter = bitPos.booleanBit match {
             case Some(bBit) => q"(_bitmask & (1 << ${Lit.Int(bBit)})) != 0"
             case None =>
               typeWithoutOption match {
-                case t"String" if dataInfo.getMod("optimiseHeapStrings") =>
+                case t"String" if dataInfo.dataMods.optimiseHeapStrings =>
                   q"new String(this.$fieldName)"
                 case _ =>
                   q"this.$fieldName"
@@ -74,7 +74,7 @@ object HeapOptimizationStats {
                """
             case None =>
               tpe match {
-                case t"Option[$_]" if dataInfo.getMod("optimiseHeapOptions") =>
+                case t"Option[$_]" if dataInfo.dataMods.optimiseHeapOptions =>
                   q"""
                    if (this.$fieldName == null) {
                      None
@@ -104,7 +104,7 @@ object HeapOptimizationStats {
           val fieldName = Term.Name("_" + param.value)
 
           val (typeWithoutOption, paramAccess: Term) = tpe match {
-            case t"Option[$t]" if dataInfo.getMod("optimiseHeapOptions") =>
+            case t"Option[$t]" if dataInfo.dataMods.optimiseHeapOptions =>
               (t, q"$param.get")
             case t =>
               (t, q"$param")
@@ -117,7 +117,7 @@ object HeapOptimizationStats {
                    }""", false)
             case None =>
               typeWithoutOption match {
-                case t"String" if dataInfo.getMod("optimiseHeapStrings") =>
+                case t"String" if dataInfo.dataMods.optimiseHeapStrings =>
                   (q"$paramAccess.getBytes", true)
                 case _ =>
                   (q"$paramAccess", true)
@@ -136,7 +136,7 @@ object HeapOptimizationStats {
                """
             case None =>
               tpe match {
-                case t"Option[$_]" if dataInfo.getMod("optimiseHeapOptions") =>
+                case t"Option[$_]" if dataInfo.dataMods.optimiseHeapOptions =>
                   q"""
                    if ($param == None) {
                      null

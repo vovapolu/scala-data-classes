@@ -23,7 +23,7 @@ object SerializableStats {
             case t"String" =>
               q"out.writeUTF($param)"
             case _ =>
-              if (dataInfo.getMod("checkSerializable")) {
+              if (dataInfo.dataMods.checkSerializable) {
                 q"out.writeObject($param: Serializable)"
               } else {
                 q"out.writeObject($param)"

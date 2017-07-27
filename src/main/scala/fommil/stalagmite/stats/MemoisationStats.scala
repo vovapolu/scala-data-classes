@@ -17,7 +17,7 @@ object MemoisationStats {
   ): (Seq[Stat], Seq[Term], Seq[Stat]) = {
     val memoisedParams = dataInfo.classParamsWithTypes.filter {
       case (param, _) =>
-        dataInfo.extraParams.memoiseRefs.contains(param.value)
+        dataInfo.dataMods.memoiseRefs.contains(param.value)
     }.map {
       case (param, tpe) =>
         q"""val ${Pat.Var.Term(Term.Name(param.value + "_memoised"))} =
@@ -26,14 +26,14 @@ object MemoisationStats {
 
     val argsWithMemoised = dataInfo.classParamNames.map(
       param =>
-        if (dataInfo.extraParams.memoiseRefs.contains(param.value)) {
+        if (dataInfo.dataMods.memoiseRefs.contains(param.value)) {
           Term.Name(param.value + "_memoised")
         } else {
           param
       }
     )
 
-    val interning = if (dataInfo.getMod("memoiseStrong")) {
+    val interning = if (dataInfo.dataMods.memoiseStrong) {
       val nameWithValueEquality =
         Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")
       val wrapperCreating = if (dataInfo.typeParams.nonEmpty) {
@@ -56,7 +56,7 @@ object MemoisationStats {
 
   object DataMemoiseStats extends DataStats {
     override def classStats(dataInfo: DataInfo): Seq[Stat] =
-      if (dataInfo.getMod("memoiseStrong")) {
+      if (dataInfo.dataMods.memoiseStrong) {
         Seq()
       } else {
         Seq(
@@ -65,7 +65,7 @@ object MemoisationStats {
       }
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =
-      if (dataInfo.getMod("memoiseStrong")) {
+      if (dataInfo.dataMods.memoiseStrong) {
         val wrapperName = Type.Name(dataInfo.name.value + "WithValueEquality")
         val wrapperWildcardType = if (dataInfo.typeParams.nonEmpty) {
           t"$wrapperName[..${Seq.fill(dataInfo.typeParams.length)(t"_")}]"
@@ -90,7 +90,7 @@ object MemoisationStats {
                 rest.foldLeft(eq1)((acc, eq) => q"$acc && $eq")
             }
           }
-          val wrapperCase = if (dataInfo.getMod("memoiseHashCode")) {
+          val wrapperCase = if (dataInfo.dataMods.memoiseHashCode) {
             p"""case that: $wrapperPatType
                if this.hashCode == that.hashCode => $wrapperCaseBody"""
           } else {
@@ -113,7 +113,7 @@ object MemoisationStats {
           q"""private[this] val memoised_cache =
               _root_.com.google.common.collect.Interners.newStrongInterner
                 [$wrapperWildcardType]()"""
-        ) ++ (if (dataInfo.extraParams.memoiseRefs.nonEmpty) {
+        ) ++ (if (dataInfo.dataMods.memoiseRefs.nonEmpty) {
                 Seq(
                   q"""
                       private[this] val memoisedRef_cache =
@@ -138,7 +138,7 @@ object MemoisationStats {
               _root_.com.google.common.collect.Interners.newWeakInterner
                 [$dataWildCardType]()
             """
-        ) ++ (if (dataInfo.extraParams.memoiseRefs.nonEmpty) {
+        ) ++ (if (dataInfo.dataMods.memoiseRefs.nonEmpty) {
                 Seq(
                   q"""
                       private[this] val memoisedRef_cache =

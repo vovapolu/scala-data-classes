@@ -54,7 +54,7 @@ object DataImpl {
 
   def validateDataInfo(dataInfo: DataInfo) =
     for {
-      ref <- dataInfo.extraParams.memoiseRefs
+      ref <- dataInfo.dataMods.memoiseRefs
     } {
       if (!dataInfo.classParamNames.map(_.value).contains(ref))
         abort(s"""There's no field called $ref""")
@@ -71,12 +71,14 @@ object DataImpl {
                ${Term.Name("_" + param.value)}: $tpe"""
     }
 
-    val modsToClasses = Seq(
-      "product"      -> ctor"_root_.scala.Product",
-      "serializable" -> ctor"_root_.scala.Serializable"
+    val modsToClasses: Seq[(DataInfo => Boolean, Ctor.Call)] = Seq(
+      ((di: DataInfo) => di.dataMods.product) ->
+        ctor"_root_.scala.Product",
+      ((di: DataInfo) => di.dataMods.serializable) ->
+        ctor"_root_.scala.Serializable"
     )
     val extendsClasses = modsToClasses.collect {
-      case (mod, ctor) if dataInfo.getMod(mod) => ctor
+      case (dataInfoP, ctor) if dataInfoP(dataInfo) => ctor
     }
 
     q"""final class ${dataInfo.name}
@@ -91,11 +93,12 @@ object DataImpl {
   }
 
   def buildObject(dataInfo: DataInfo, builders: Seq[DataStats]): Stat = {
-    val modsToClasses = Seq(
-      "serializable" -> ctor"_root_.scala.Serializable"
+    val modsToClasses: Seq[(DataInfo => Boolean, Ctor.Call)] = Seq(
+      ((di: DataInfo) => di.dataMods.serializable) ->
+        ctor"_root_.scala.Serializable"
     ) ++ (if (dataInfo.typeParams.isEmpty) {
             Seq(
-              "companionExtends" ->
+              ((di: DataInfo) => di.dataMods.companionExtends) ->
                 ctor"((..${dataInfo.classParamsTypes}) => ${dataInfo.dataType})"
             )
           } else {
@@ -103,7 +106,7 @@ object DataImpl {
           })
 
     val extendsClasses = modsToClasses.collect {
-      case (mod, ctor) if dataInfo.getMod(mod) => ctor
+      case (dataInfoP, ctor) if dataInfoP(dataInfo) => ctor
     }
 
     q"""object ${Term.Name(dataInfo.name.value)}
@@ -115,9 +118,7 @@ object DataImpl {
     }"""
   }
 
-  def expand(clazz: Defn.Class,
-             dataMods: Map[String, Boolean],
-             extraParams: ExtraParams): Term.Block =
+  def expand(clazz: Defn.Class, dataMods: DataMods): Term.Block =
     clazz match {
       case cls @ Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
         validateClass(ctor, tmpl, tparams)
@@ -125,25 +126,29 @@ object DataImpl {
           name,
           ctor.paramss.flatten,
           tparams,
-          dataMods,
-          extraParams
+          dataMods
         )
         validateDataInfo(dataInfo)
 
-        val modsToStats = Seq(
-          "product" -> Seq(DataProductMethodsStats),
-          "serializable" -> Seq(
+        val modsToStats: Seq[(DataInfo => Boolean, Seq[DataStats])] = Seq(
+          ((di: DataInfo) => di.dataMods.product) -> Seq(
+            DataProductMethodsStats
+          ),
+          ((di: DataInfo) => di.dataMods.serializable) -> Seq(
             DataWriteObjectStats,
             DataReadObjectStats,
             DataReadResolveStats
           ),
-          "shapeless" -> Seq(
+          ((di: DataInfo) => di.dataMods.shapeless) -> Seq(
             DataShapelessBaseStats,
             DataShapelessTypeableStats,
             DataShapelessGenericsStats
           ),
-          "memoise" -> Seq(
+          ((di: DataInfo) => di.dataMods.memoise) -> Seq(
             DataMemoiseStats
+          ),
+          ((di: DataInfo) => di.requiredToPack) -> Seq(
+            PackStats
           )
         )
 
@@ -156,12 +161,11 @@ object DataImpl {
           DataToStringStats,
           DataCopyStats
         ) ++ modsToStats.collect {
-          case (mod, bs) if dataInfo.getMod(mod) => bs
-        }.flatten ++
-          (if (dataInfo.requiredToPack) Seq(PackStats) else Seq())
+          case (dataInfoP, bs) if dataInfoP(dataInfo) => bs
+        }.flatten.toList
 
-        val newClass  = buildClass(dataInfo, builders.toList)
-        val newObject = buildObject(dataInfo, builders.toList)
+        val newClass  = buildClass(dataInfo, builders)
+        val newObject = buildObject(dataInfo, builders)
         //println((newClass, newObject).toString())
 
         Term.Block(
@@ -176,9 +180,10 @@ object DataImpl {
 }
 
 class data(product: Boolean = false,
-           checkSerializable: Boolean = false,
-           serializable: Boolean = false,
-           shapeless: Boolean = false,
+           checkSerializable: Boolean = true,
+           companionExtends: Boolean = false,
+           serializable: Boolean = true,
+           shapeless: Boolean = true,
            memoise: Boolean = false,
            memoiseHashCode: Boolean = false,
            memoiseToString: Boolean = false,
@@ -193,39 +198,32 @@ class data(product: Boolean = false,
   val dummy = 'dummy
 
   inline def apply(defn: Any): Any = meta {
-    val (dataMods, extraParams) = this match {
+
+    val dataMods = this match {
       case q"new data(..$args)" =>
         //println(args.map(_.structure))
-        val mods = args.flatMap {
-          case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) =>
-            Some(name -> b)
-          case _ =>
-            None
-        }.toMap[String, Boolean]
-
-        val memoiseRefs = args.collect {
+        val pairs = args.collect {
+          case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) => name -> b
           case Term.Arg.Named(
               Term.Name("memoiseRefs"),
               Term.Apply(Term.Name("Seq"), symbols)
               ) =>
-            symbols.collect {
+            "memoiseRefs" -> symbols.collect {
               case q"scala.Symbol(${Lit.String(sym) })" => sym
             }
-        }.headOption.getOrElse(Seq())
+        }
+        DataMods.fromPairs(pairs)
 
-        (mods, ExtraParams(memoiseRefs))
-      case _ => (Map.empty[String, Boolean], ExtraParams())
+      case _ => DataMods()
     }
 
     defn match {
       case Term.Block(
-          Seq(
-            cls @ Defn.Class(Seq(), name, Seq(), ctor, tmpl),
-            companion: Defn.Object
-          )
+          Seq(cls @ Defn.Class(Seq(), name, Seq(), ctor, tmpl),
+              companion: Defn.Object)
           ) =>
         abort("@data block")
-      case clazz: Defn.Class => DataImpl.expand(clazz, dataMods, extraParams)
+      case clazz: Defn.Class => DataImpl.expand(clazz, dataMods)
     }
   }
 }
