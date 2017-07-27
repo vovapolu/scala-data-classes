@@ -5,12 +5,13 @@ import fommil.stalagmite.data
 import _root_.scala._
 import _root_.scala.Predef._
 
-@data(product = true, serializable = true, shapeless = true)
+@data(
+  product = true,
+  checkSerializable = false
+)
 class FooMeta[+T](a: Boolean, s: String, t: T, i: Int = 0)
 
 @data(
-  serializable = true,
-  shapeless = true,
   memoise = true,
   memoiseRefs = Seq('s),
   memoiseHashCode = true,
@@ -24,3 +25,13 @@ class FooMetaMemoised(a: Boolean, s: String)
   memoiseRefs = Seq('s)
 )
 class FooMetaMemoisedWeak(a: Boolean, s: String)
+
+@data(
+  optimiseHeapOptions = true,
+  optimiseHeapBooleans = true,
+  optimiseHeapStrings = true,
+  product = true
+)
+class FooMetaOptimiseHeap(a: Option[Boolean],
+                          b: Option[Boolean],
+                          s: Option[String])

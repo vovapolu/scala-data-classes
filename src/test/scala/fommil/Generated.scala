@@ -2,7 +2,7 @@ package fommil
 
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{ DataImpl, ExtraParams }
+import fommil.stalagmite.{ DataImpl, DataMods }
 import org.scalatest._
 import org.scalatest.Matchers._
 
@@ -36,12 +36,12 @@ class Generated extends FlatSpec with ParallelTestExecution {
           .getOrElse("")
           .stripPrefix("//")
           .split(" ")
+          .toList
         val extraMods = inputMods
           .drop(1)
           .map(str => Seq(str.stripPrefix("//").split(" "): _*))
           .filter(_.nonEmpty)
           .map { case mod :: keys => mod -> keys }
-          .toMap
 
         val inputTree = input.lines
           .dropWhile(_.startsWith("//"))
@@ -54,8 +54,8 @@ class Generated extends FlatSpec with ParallelTestExecution {
         val targetTree = target.parse[Stat].get
         val expandedTree = DataImpl.expand(
           inputTree,
-          booleanMods.map(mod => mod -> true).toMap,
-          ExtraParams(extraMods.getOrElse("memoiseRefs", Seq()))
+          DataMods.fromPairs(booleanMods.map(_ -> true) ++ extraMods,
+                             applyDefaults = false)
         )
         if (printStructure)
           println(expandedTree)
@@ -68,13 +68,24 @@ class Generated extends FlatSpec with ParallelTestExecution {
     checkGenFile("NoModsGen")
   }
 
+  "@data-generated class with only one field" should
+    "have correct definition" in {
+    checkGenFile("OneFieldGen")
+  }
+
   "@data-generated class" should "have case-class methods" in {
     checkGenFile("CaseClassParityGen")
     checkGenFile("CaseClassTypedParityGen")
   }
 
-  "@data-generated class with memoising" should "have cache, corresponding apply method" in {
+  "@data-generated class with memoising" should
+    "have cache, corresponding apply method" in {
     checkGenFile("MemoisedGen")
     checkGenFile("StronglyMemoisedGen")
+  }
+
+  "@data-generated class with heap optimization" should
+    "have pack method and needed logic in apply, readObject and getters" in {
+    checkGenFile("HeapOptimizationGen")
   }
 }

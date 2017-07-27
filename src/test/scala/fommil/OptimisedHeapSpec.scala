@@ -1,10 +1,10 @@
 package stalagmite
 
 import testing.optimiseheap._
+import testing.meta._
 
 import _root_.scala._
 import _root_.scala.Predef._
-
 import java.io._
 
 import org.scalatest._
@@ -12,7 +12,6 @@ import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalactic.anyvals.PosInt
-
 import shapeless._
 
 class OptimisedHeapSpec
@@ -20,36 +19,45 @@ class OptimisedHeapSpec
     with ParallelTestExecution
     with GeneratorDrivenPropertyChecks {
   val foo = Foo(Option(true), Option(false), Option("world"))
+  val fooMeta =
+    FooMetaOptimiseHeap(Option(true), Option(false), Option("world"))
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSuccessful = PosInt(100))
 
-  "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
-    foo.hashCode shouldBe 626589729
-    foo should equal(foo)
-    foo should not be theSameInstanceAs(
-      Foo(Option(true), Option(false), Option("world"))
+  "@data(product) class FooMetaOptimiseHeap[+]" should
+    "have equals, hashCode and toString defined" in {
+    fooMeta.hashCode shouldBe 626589729
+    fooMeta should equal(fooMeta)
+    fooMeta should not be theSameInstanceAs(
+      FooMetaOptimiseHeap(Option(true), Option(false), Option("world"))
     )
-    foo should not equal (Foo(Option(false), Option(false), Option("world")))
-    foo.toString should equal("Foo(Some(true),Some(false),Some(world))")
-    Foo.toString should equal("Foo")
+    fooMeta should not equal FooMetaOptimiseHeap(Option(false),
+                                                 Option(false),
+                                                 Option("world"))
+
+    fooMeta.toString should equal(
+      "FooMetaOptimiseHeap(Some(true),Some(false),Some(world))"
+    )
+    FooMetaOptimiseHeap.toString should equal("FooMetaOptimiseHeap")
   }
 
   it should "not expose its constructor" in {
-    """new Foo(Option(true), Option(false), Option("world"))""" shouldNot compile
+    """new FooMetaOptimiseHeap(
+      Option(true), Option(false), Option("world"))""" shouldNot compile
 
-    """new Foo()""" shouldNot compile
+    """new FooMetaOptimiseHeap()""" shouldNot compile
   }
 
   it should "expose its fields" in {
-    foo.a.value should equal(true)
-    foo.b.value should equal(false)
-    foo.s.value should equal("world")
+    fooMeta.a.value should equal(true)
+    fooMeta.b.value should equal(false)
+    fooMeta.s.value should equal("world")
   }
 
   it should "correctly return a wide range parameters as fields" in {
     forAll { (a: Option[Boolean], b: Option[Boolean], s: Option[String]) =>
-      val f = Foo(a, b, s)
+      val f = FooMetaOptimiseHeap(a, b, s)
       f.a should equal(a)
       f.b should equal(b)
       f.s should equal(s)
@@ -57,20 +65,20 @@ class OptimisedHeapSpec
   }
 
   it should "have a copy method" in {
-    foo.copy(a = Option(false)) should equal(
-      Foo(Option(false), Option(false), Option("world"))
+    fooMeta.copy(a = Option(false)) should equal(
+      FooMetaOptimiseHeap(Option(false), Option(false), Option("world"))
     )
-    foo.copy(b = Option(true)) should equal(
-      Foo(Option(true), Option(true), Option("world"))
+    fooMeta.copy(b = Option(true)) should equal(
+      FooMetaOptimiseHeap(Option(true), Option(true), Option("world"))
     )
-    foo.copy(s = Option("foo")) should equal(
-      Foo(Option(true), Option(false), Option("foo"))
+    fooMeta.copy(s = Option("foo")) should equal(
+      FooMetaOptimiseHeap(Option(true), Option(false), Option("foo"))
     )
   }
 
   it should "have a pattern matcher" in {
-    foo should matchPattern {
-      case Foo(Some(true), Some(false), Some("world")) =>
+    fooMeta should matchPattern {
+      case FooMetaOptimiseHeap(Some(true), Some(false), Some("world")) =>
     }
   }
 
@@ -80,43 +88,42 @@ class OptimisedHeapSpec
     val bytes_out = new ByteArrayOutputStream
     val out       = new ObjectOutputStream(bytes_out)
 
-    out.writeObject(foo)
+    out.writeObject(fooMeta)
     out.close()
 
     val bytes_in = new ByteArrayInputStream(bytes_out.toByteArray())
     val in       = new ObjectInputStream(bytes_in)
 
-    val recovered = in.readObject().asInstanceOf[Foo]
+    val recovered = in.readObject().asInstanceOf[FooMetaOptimiseHeap]
 
-    recovered should equal(foo)
-    recovered should not be theSameInstanceAs(foo)
+    recovered should equal(fooMeta)
+    recovered should not be theSameInstanceAs(fooMeta)
   }
 
   it should "have a Generic" in {
-    implicit val G: Generic[Foo] = cachedImplicit
+    implicit val G: Generic[FooMetaOptimiseHeap] = cachedImplicit
     import G._
 
-    from(to(foo)) should equal(foo)
+    from(to(fooMeta)) should equal(fooMeta)
   }
 
   it should "have a LabelledGeneric" in {
-    implicit val LG: LabelledGeneric[Foo] = cachedImplicit
+    implicit val LG: LabelledGeneric[FooMetaOptimiseHeap] = cachedImplicit
     import LG._
 
-    from(to(foo)) should equal(foo)
+    from(to(fooMeta)) should equal(fooMeta)
   }
 
   it should "have a Typeable" in {
-    val T = Typeable[Foo]
+    val T = Typeable[FooMetaOptimiseHeap]
 
     T.describe should equal(
-      "Foo[Option[Boolean],Option[Boolean],Option[String]]"
+      "FooMetaOptimiseHeap[Option[Boolean],Option[Boolean],Option[String]]"
     )
 
     T.cast("hello") shouldBe empty
     T.cast(1L) shouldBe empty
-    T.cast(foo).value should equal(foo)
-    T.cast(foo).value should be theSameInstanceAs (foo)
+    T.cast(fooMeta).value should equal(fooMeta)
   }
 
   it should "allow user-land Semigroup (Generic) derivation" in {
@@ -129,8 +136,8 @@ class OptimisedHeapSpec
       override def combine(x: Boolean, y: Boolean): Boolean = x & y
     }
 
-    (foo |+| foo) should equal(
-      Foo(Option(true), Option(true), Option("worldworld"))
+    (fooMeta |+| fooMeta) should equal(
+      FooMetaOptimiseHeap(Option(true), Option(false), Option("worldworld"))
     )
   }
 
@@ -138,26 +145,27 @@ class OptimisedHeapSpec
     import spray.json._
     import fommil.sjs.FamilyFormats._
 
-    foo.toJson.compactPrint should equal("""{"a":true,"b":false,"s":"world"}""")
+    fooMeta.toJson.compactPrint should equal(
+      """{"a":true,"b":false,"s":"world"}"""
+    )
   }
 
   it should "not allow null or Some(null) parameters for optimised fields" in {
 
     intercept[NullPointerException] {
-      Foo(null, Option(true), Option("hello"))
+      FooMetaOptimiseHeap(null, Option(true), Option("hello"))
     }
 
     intercept[NullPointerException] {
-      Foo(Option(true), null, Option("hello"))
+      FooMetaOptimiseHeap(Option(true), null, Option("hello"))
     }
 
     intercept[NullPointerException] {
-      Foo(Option(true), Option(true), null)
+      FooMetaOptimiseHeap(Option(true), Option(true), null)
     }
 
     intercept[NullPointerException] {
-      Foo(Option(true), Option(true), Some(null))
+      FooMetaOptimiseHeap(Option(true), Option(true), Some(null))
     }
-
   }
 }

@@ -83,18 +83,18 @@ class A(a: Boolean, s: String = "a", o: Option[Double])
     val s_tpe = Symbol("s").narrow
     val o_tpe = Symbol("o").narrow
 
-    implicit def TypeableA(implicit `TOption[Double]`: Typeable[Option[Double]]): Typeable[A] = new Typeable[A] {
+    implicit def TypeableA(implicit T0: Typeable[Option[Double]]): Typeable[A] = new Typeable[A] {
       override def cast(t: Any): Option[A] = {
         import _root_.shapeless.TypeCase
-        val `TC_Option[Double]` = TypeCase[Option[Double]]
+        val TC0 = TypeCase[Option[Double]]
         t match {
-          case f @ A(a, s, `TC_Option[Double]`(o)) =>
+          case f @ A(a, s, TC0(o)) =>
             Some(A(a, s, o))
           case _ =>
             None
         }
       }
-      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + `TOption[Double]`.describe) + "]"
+      override def describe: String = "A[" + ("Boolean" + "," + "String" + "," + T0.describe) + "]"
     }
 
     implicit def GenericA: Generic.Aux[A, Boolean :: String :: Option[Double] :: HNil] = new Generic[A] {

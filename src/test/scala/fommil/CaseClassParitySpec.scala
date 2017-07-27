@@ -22,7 +22,8 @@ class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {
   val foo     = Foo(true, "hello", "world", 1)
   val fooMeta = FooMeta(true, "hello", "world", 1)
 
-  "@data(product) class Foo[+]" should "have equals, hashCode and toString defined" in {
+  "@data(product) class Foo[+]" should
+    "have equals, hashCode and toString defined" in {
     fooMeta.hashCode shouldBe -1034845328
     fooMeta should equal(fooMeta)
     fooMeta should not be theSameInstanceAs(FooMeta(true, "hello", "world", 1))
