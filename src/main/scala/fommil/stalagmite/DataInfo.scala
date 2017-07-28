@@ -62,12 +62,14 @@ object DataInfo {
 }
 
 object DataMods {
-  def fromPairs(pairs: Seq[(String, Any)],
+  type |:[L, R] = Either[L, R]
+
+  def fromPairs(pairs: Seq[(String, Boolean |: Seq[String])],
                 applyDefaults: Boolean = true): DataMods = {
 
     def collectMod(mod: String, defaultParam: Boolean = false): Boolean =
       pairs.collect {
-        case (`mod`, b: Boolean) => b
+        case (`mod`, Left(b)) => b
       }.headOption.getOrElse(defaultParam)
 
     DataMods(
@@ -84,7 +86,7 @@ object DataMods {
       collectMod("optimiseHeapBooleans"),
       collectMod("optimiseHeapStrings"),
       pairs.collect {
-        case ("memoiseRefs", refs: Seq[String @unchecked]) => refs
+        case ("memoiseRefs", Right(refs)) => refs
       }.headOption.getOrElse(Seq())
     )
   }
@@ -169,10 +171,10 @@ final case class DataInfo(name: Type.Name,
               BitPosition(
                 if (optionBit > 0) Some(curReservedBit) else None,
                 if (booleanBit > 0) Some(curReservedBit + optionBit)
-                else None,
+                else None
               ) :: generateBitPosition(
                 tail,
-                curReservedBit + optionBit + booleanBit,
+                curReservedBit + optionBit + booleanBit
               )
           }
         case _ => List.empty
