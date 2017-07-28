@@ -41,7 +41,7 @@ class Generated extends FlatSpec with ParallelTestExecution {
           .drop(1)
           .map(str => Seq(str.stripPrefix("//").split(" "): _*))
           .filter(_.nonEmpty)
-          .map { case mod :: keys => mod -> keys }
+          .map { case mod :: keys => mod -> Right(keys) }
 
         val inputTree = input.lines
           .dropWhile(_.startsWith("//"))
@@ -54,7 +54,7 @@ class Generated extends FlatSpec with ParallelTestExecution {
         val targetTree = target.parse[Stat].get
         val expandedTree = DataImpl.expand(
           inputTree,
-          DataMods.fromPairs(booleanMods.map(_ -> true) ++ extraMods,
+          DataMods.fromPairs(booleanMods.map(_ -> Left(true)) ++ extraMods,
                              applyDefaults = false)
         )
         if (printStructure)

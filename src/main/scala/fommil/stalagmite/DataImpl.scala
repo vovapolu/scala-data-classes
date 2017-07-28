@@ -201,16 +201,16 @@ class data(product: Boolean = false,
 
     val dataMods = this match {
       case q"new data(..$args)" =>
-        //println(args.map(_.structure))
         val pairs = args.collect {
-          case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) => name -> b
+          case Term.Arg.Named(Term.Name(name), Lit.Boolean(b)) =>
+            name -> Left(b)
           case Term.Arg.Named(
               Term.Name("memoiseRefs"),
               Term.Apply(Term.Name("Seq"), symbols)
               ) =>
-            "memoiseRefs" -> symbols.collect {
+            "memoiseRefs" -> Right(symbols.collect {
               case q"scala.Symbol(${Lit.String(sym) })" => sym
-            }
+            })
         }
         DataMods.fromPairs(pairs)
 
