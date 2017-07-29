@@ -14,8 +14,8 @@ import _root_.scala.Predef._
 //)
 //class Foo(a: Boolean, s: String)
 final class Foo private (
-  private var _a: Boolean,
-  private var _s: String,
+  private[this] var _a: Boolean,
+  private[this] var _s: String,
   // key is used in the memoisation cache (stops it being GCd)
   private val _key: (Boolean, String)
 ) extends Serializable {
