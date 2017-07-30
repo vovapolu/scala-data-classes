@@ -10,14 +10,12 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
 import org.slf4j.LoggerFactory
-import org.slf4j.bridge.SLF4JBridgeHandler
-
 import shapeless._
+
+import scala.util.Random
 
 // intentionally parallel to try and flush out concurrency issues
 class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
-  SLF4JBridgeHandler.removeHandlersForRootLogger()
-  SLF4JBridgeHandler.install()
   val log = LoggerFactory.getLogger(this.getClass)
 
   val foo = Foo(true, "hello")
@@ -58,7 +56,7 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
     out.writeObject(foo)
     out.close()
 
-    val bytes_in = new ByteArrayInputStream(bytes_out.toByteArray())
+    val bytes_in = new ByteArrayInputStream(bytes_out.toByteArray)
     val in       = new ObjectInputStream(bytes_in)
 
     val recovered = in.readObject().asInstanceOf[Foo]
@@ -109,7 +107,6 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
     S.combine(foo, foo) should equal(Foo(true, "hellohello"))
   }
 
-  // redundant, just using it becuase I am familiar with the required imports
   it should "allow user-land JsonFormat (LabelledGeneric) derivation" in {
     import spray.json._
     import fommil.sjs.FamilyFormats._
@@ -118,6 +115,63 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
   }
 
   it should "have memoised string fields" in {
-    Foo(true, "stringy").s should be theSameInstanceAs (Foo(false, "stringy").s)
+    Foo(true, "stringy").s should be theSameInstanceAs Foo(false, "stringy").s
+  }
+
+  it should "ensure that memory remains" in {
+    val memoryRemains =
+      """
+        |Fortune, fame
+        |Mirror vain
+        |Gone insane
+        |But the memory remains
+        |Heavy rings on fingers wave
+        |Another star denies the grave
+        |See the nowhere crowd,
+        |cry the nowhere tears of honor
+        |Like twisted vines that grow
+        |That hide and swallow mansions whole
+        |And dim the light of an already faded prima donna
+        |Fortune, fame
+        |Mirror vain
+        |Gone insane...
+        |Fortune, fame
+        |Mirror vain
+        |Gone insane...
+        |But the memory remains
+      """.stripMargin
+
+    val data = memoryRemains.lines.zipWithIndex.map {
+      case (line, i) => (i % 3 == 0, line)
+    }.toList
+    val foos = data.map {
+      case (b, s) => Foo(b, s)
+    }
+
+    Random.setSeed(4242L)
+    for (_ <- 1 to 10000) {
+      val ind    = Random.nextInt(foos.length)
+      val (b, s) = data(ind)
+      Foo(b, s) should be theSameInstanceAs foos(ind)
+      Foo(b, s).s should be theSameInstanceAs foos(ind).s
+    }
+  }
+
+  it should "withstand intense creating of random data" in {
+    Random.setSeed(0xCAFEBABEL)
+    val data = (1 to 10000).map(
+      _ => (Random.nextBoolean(), Random.nextString(Random.nextInt(100)))
+    )
+
+    val foos = data.map {
+      case (b, s) => Foo(b, s)
+    }
+
+    for (_ <- 1 to 100000) {
+      val ind    = Random.nextInt(foos.length)
+      val (b, s) = data(ind)
+      Foo(b, s) should be theSameInstanceAs foos(ind)
+      Foo(b, s).s should be theSameInstanceAs foos(ind).s
+    }
   }
 }

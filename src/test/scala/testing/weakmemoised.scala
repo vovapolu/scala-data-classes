@@ -123,9 +123,9 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
         }
         if (got != null) got
         else {
-          println(s"CREATING Foo($a (${java.lang.System
-            .identityHashCode(a)}), $s_cached (${java.lang.System
-            .identityHashCode(s_cached)})), in cache: ${memoised_cache.keySet()}")
+//          println(s"CREATING Foo($a (${java.lang.System
+//            .identityHashCode(a)}), $s_cached (${java.lang.System
+//            .identityHashCode(s_cached)})), in cache: ${memoised_cache.keySet()}")
           val created = new Foo(a, s_cached, key)
           // safe publication (we have vars, for serialisation)
           val foo = created.synchronized(created)
