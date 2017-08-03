@@ -22,7 +22,9 @@ class FooMetaMemoised(a: Boolean, s: String)
 
 @data(
   memoise = true,
-  memoiseRefs = Seq('s)
+  memoiseRefs = Seq('s),
+  memoiseHashCode = true,
+  memoiseToString = true
 )
 class FooMetaMemoisedWeak(a: Boolean, s: String)
 
