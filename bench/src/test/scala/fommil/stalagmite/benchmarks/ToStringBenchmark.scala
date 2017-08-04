@@ -8,35 +8,41 @@ class ToStringBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[String] = fooCaseClasses.map(_.toString)
+  def caseClass(cs: CaseClassData): IndexedSeq[String] = cs.foos.map(_.toString)
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[String] = fooCaseClassesSpec.map(_.toString)
+  def caseClassSpec(cs: CaseClassData): IndexedSeq[String] =
+    cs.foosSpec.map(_.toString)
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[String] = fooCaseClassesMeta.map(_.toString)
+  def caseClassMeta(cs: CaseClassData): IndexedSeq[String] =
+    cs.foosMeta.map(_.toString)
 
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass: IndexedSeq[String] =
-    fooOptimizeHeapCaseClasses.map(_.toString)
+  def optimizeHeapCaseClass(oh: OptimizeHeapData): IndexedSeq[String] =
+    oh.foos.map(_.toString)
 
   @Benchmark
-  def optimizeHeapSpec: IndexedSeq[String] = fooOptimizeHeapSpec.map(_.toString)
+  def optimizeHeapSpec(oh: OptimizeHeapData): IndexedSeq[String] =
+    oh.foosSpec.map(_.toString)
 
   @Benchmark
-  def optimizeHeapMeta: IndexedSeq[String] = fooOptimizeHeapMeta.map(_.toString)
+  def optimizeHeapMeta(oh: OptimizeHeapData): IndexedSeq[String] =
+    oh.foosMeta.map(_.toString)
 
   // memoised
 
   @Benchmark
-  def memoisedCaseClass: IndexedSeq[String] =
-    fooMemoisedCaseClasses.map(_.toString)
+  def memoisedCaseClass(m: MemoisedData): IndexedSeq[String] =
+    m.foos.map(_.toString)
 
   @Benchmark
-  def memoisedSpec: IndexedSeq[String] = fooMemoisedSpec.map(_.toString)
+  def memoisedSpec(m: MemoisedData): IndexedSeq[String] =
+    m.foosSpec.map(_.toString)
 
   @Benchmark
-  def memoisedMeta: IndexedSeq[String] = fooMemoisedMeta.map(_.toString)
+  def memoisedMeta(m: MemoisedData): IndexedSeq[String] =
+    m.foosMeta.map(_.toString)
 }

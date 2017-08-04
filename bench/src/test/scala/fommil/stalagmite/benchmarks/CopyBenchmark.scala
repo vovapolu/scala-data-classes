@@ -12,64 +12,78 @@ class CopyBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[(FooCaseClass[String], FooCaseClass[Int])] =
-    fooCaseClasses.map(
+  def caseClass(
+    cs: CaseClassData
+  ): IndexedSeq[(FooCaseClass[String], FooCaseClass[Int])] =
+    cs.foos.map(
       foo => (foo.copy(i = Random.nextInt), foo.copy(t = Random.nextInt))
     )
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[(caseclass.Foo[String], caseclass.Foo[Int])] =
-    fooCaseClassesSpec.map(
+  def caseClassSpec(
+    cs: CaseClassData
+  ): IndexedSeq[(caseclass.Foo[String], caseclass.Foo[Int])] =
+    cs.foosSpec.map(
       foo => (foo.copy(i = Random.nextInt), foo.copy(t = Random.nextInt))
     )
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[(FooMeta[String], FooMeta[Int])] =
-    fooCaseClassesMeta.map(
+  def caseClassMeta(
+    cs: CaseClassData
+  ): IndexedSeq[(FooMeta[String], FooMeta[Int])] =
+    cs.foosMeta.map(
       foo => (foo.copy(i = Random.nextInt), foo.copy(t = Random.nextInt))
     )
 
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass
-    : IndexedSeq[(FooOptimizeHeapCaseClass, FooOptimizeHeapCaseClass)] =
-    fooOptimizeHeapCaseClasses.map(
+  def optimizeHeapCaseClass(
+    oh: OptimizeHeapData
+  ): IndexedSeq[(FooOptimizeHeapCaseClass, FooOptimizeHeapCaseClass)] =
+    oh.foos.map(
       foo => (foo.copy(a = Some(Random.nextBoolean)), foo.copy(b = None))
     )
 
   @Benchmark
-  def optimizeHeapSpec: IndexedSeq[(optimiseheap.Foo, optimiseheap.Foo)] =
-    fooOptimizeHeapSpec.map(
+  def optimizeHeapSpec(
+    oh: OptimizeHeapData
+  ): IndexedSeq[(optimiseheap.Foo, optimiseheap.Foo)] =
+    oh.foosSpec.map(
       foo => (foo.copy(a = Some(Random.nextBoolean)), foo.copy(b = None))
     )
 
   @Benchmark
-  def optimizeHeapMeta: IndexedSeq[(FooMetaOptimiseHeap, FooMetaOptimiseHeap)] =
-    fooOptimizeHeapMeta.map(
+  def optimizeHeapMeta(
+    oh: OptimizeHeapData
+  ): IndexedSeq[(FooMetaOptimiseHeap, FooMetaOptimiseHeap)] =
+    oh.foosMeta.map(
       foo => (foo.copy(a = Some(Random.nextBoolean)), foo.copy(b = None))
     )
 
   // memoised
 
   @Benchmark
-  def memoisedCaseClass
-    : IndexedSeq[(FooMemoisedCaseClass, FooMemoisedCaseClass)] =
-    fooMemoisedCaseClasses.map(
+  def memoisedCaseClass(
+    m: MemoisedData
+  ): IndexedSeq[(FooMemoisedCaseClass, FooMemoisedCaseClass)] =
+    m.foos.map(
       foo =>
         (foo.copy(b = Random.nextBoolean), foo.copy(s = Random.nextString(1)))
     )
 
   @Benchmark
-  def memoisedSpec: IndexedSeq[(memoised.Foo, memoised.Foo)] =
-    fooMemoisedSpec.map(
+  def memoisedSpec(m: MemoisedData): IndexedSeq[(memoised.Foo, memoised.Foo)] =
+    m.foosSpec.map(
       foo =>
         (foo.copy(a = Random.nextBoolean), foo.copy(s = Random.nextString(1)))
     )
 
   @Benchmark
-  def memoisedMeta: IndexedSeq[(FooMetaMemoised, FooMetaMemoised)] =
-    fooMemoisedMeta.map(
+  def memoisedMeta(
+    m: MemoisedData
+  ): IndexedSeq[(FooMetaMemoised, FooMetaMemoised)] =
+    m.foosMeta.map(
       foo =>
         (foo.copy(a = Random.nextBoolean), foo.copy(s = Random.nextString(1)))
     )

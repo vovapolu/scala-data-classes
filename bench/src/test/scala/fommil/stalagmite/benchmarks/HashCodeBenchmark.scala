@@ -8,35 +8,42 @@ class HashCodeBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[Int] = fooCaseClasses.map(_.hashCode)
+  def caseClass(cs: CaseClassData): IndexedSeq[Int] =
+    cs.foos.map(_.hashCode)
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[Int] = fooCaseClassesSpec.map(_.hashCode)
+  def caseClassSpec(cs: CaseClassData): IndexedSeq[Int] =
+    cs.foosSpec.map(_.hashCode)
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[Int] = fooCaseClassesMeta.map(_.hashCode)
+  def caseClassMeta(cs: CaseClassData): IndexedSeq[Int] =
+    cs.foosMeta.map(_.hashCode)
 
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass: IndexedSeq[Int] =
-    fooOptimizeHeapCaseClasses.map(_.hashCode)
+  def optimizeHeapCaseClass(oh: OptimizeHeapData): IndexedSeq[Int] =
+    oh.foos.map(_.hashCode)
 
   @Benchmark
-  def optimizeHeapSpec: IndexedSeq[Int] = fooOptimizeHeapSpec.map(_.hashCode)
+  def optimizeHeapSpec(oh: OptimizeHeapData): IndexedSeq[Int] =
+    oh.foosSpec.map(_.hashCode)
 
   @Benchmark
-  def optimizeHeapMeta: IndexedSeq[Int] = fooOptimizeHeapMeta.map(_.hashCode)
+  def optimizeHeapMeta(oh: OptimizeHeapData): IndexedSeq[Int] =
+    oh.foosMeta.map(_.hashCode)
 
   // memoised
 
   @Benchmark
-  def memoisedCaseClass: IndexedSeq[Int] =
-    fooMemoisedCaseClasses.map(_.hashCode)
+  def memoisedCaseClass(m: MemoisedData): IndexedSeq[Int] =
+    m.foos.map(_.hashCode)
 
   @Benchmark
-  def memoisedSpec: IndexedSeq[Int] = fooMemoisedSpec.map(_.hashCode)
+  def memoisedSpec(m: MemoisedData): IndexedSeq[Int] =
+    m.foosSpec.map(_.hashCode)
 
   @Benchmark
-  def memoisedMeta: IndexedSeq[Int] = fooMemoisedMeta.map(_.hashCode)
+  def memoisedMeta(m: MemoisedData): IndexedSeq[Int] =
+    m.foosMeta.map(_.hashCode)
 }

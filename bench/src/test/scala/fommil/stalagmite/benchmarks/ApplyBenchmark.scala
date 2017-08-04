@@ -11,42 +11,44 @@ class ApplyBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[FooCaseClass[String]] =
-    data.map { case (a, b, c, d) => FooCaseClass(a, b, c, d) }
+  def caseClass(cs: CaseClassData): IndexedSeq[FooCaseClass[String]] =
+    cs.data.map { case (a, b, c, d) => FooCaseClass(a, b, c, d) }
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[caseclass.Foo[String]] =
-    data.map { case (a, b, c, d) => caseclass.Foo(a, b, c, d) }
+  def caseClassSpec(cs: CaseClassData): IndexedSeq[caseclass.Foo[String]] =
+    cs.data.map { case (a, b, c, d) => caseclass.Foo(a, b, c, d) }
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[FooMeta[String]] =
-    data.map { case (a, b, c, d) => FooMeta(a, b, c, d) }
+  def caseClassMeta(cs: CaseClassData): IndexedSeq[FooMeta[String]] =
+    cs.data.map { case (a, b, c, d) => FooMeta(a, b, c, d) }
 
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass: IndexedSeq[FooOptimizeHeapCaseClass] =
-    dataOptimizeHeap.map { case (a, b, c) => FooOptimizeHeapCaseClass(a, b, c) }
+  def optimizeHeapCaseClass(
+    oh: OptimizeHeapData
+  ): IndexedSeq[FooOptimizeHeapCaseClass] =
+    oh.data.map { case (a, b, c) => FooOptimizeHeapCaseClass(a, b, c) }
 
   @Benchmark
-  def optimizeHeapSpec: IndexedSeq[optimiseheap.Foo] =
-    dataOptimizeHeap.map { case (a, b, c) => optimiseheap.Foo(a, b, c) }
+  def optimizeHeapSpec(oh: OptimizeHeapData): IndexedSeq[optimiseheap.Foo] =
+    oh.data.map { case (a, b, c) => optimiseheap.Foo(a, b, c) }
 
   @Benchmark
-  def optimizeHeapMeta: IndexedSeq[FooMetaOptimiseHeap] =
-    dataOptimizeHeap.map { case (a, b, c) => FooMetaOptimiseHeap(a, b, c) }
+  def optimizeHeapMeta(oh: OptimizeHeapData): IndexedSeq[FooMetaOptimiseHeap] =
+    oh.data.map { case (a, b, c) => FooMetaOptimiseHeap(a, b, c) }
 
   // memoised
 
   @Benchmark
-  def memoisedCaseClass: IndexedSeq[FooMemoisedCaseClass] =
-    dataMemoised.map { case (a, b) => FooMemoisedCaseClass(a, b) }
+  def memoisedCaseClass(m: MemoisedData): IndexedSeq[FooMemoisedCaseClass] =
+    m.data.map { case (a, b) => FooMemoisedCaseClass(a, b) }
 
   @Benchmark
-  def memoisedSpec: IndexedSeq[memoised.Foo] =
-    dataMemoised.map { case (a, b) => memoised.Foo(a, b) }
+  def memoisedSpec(m: MemoisedData): IndexedSeq[memoised.Foo] =
+    m.data.map { case (a, b) => memoised.Foo(a, b) }
 
   @Benchmark
-  def memoisedMeta: IndexedSeq[FooMetaMemoised] =
-    dataMemoised.map { case (a, b) => FooMetaMemoised(a, b) }
+  def memoisedMeta(m: MemoisedData): IndexedSeq[FooMetaMemoised] =
+    m.data.map { case (a, b) => FooMetaMemoised(a, b) }
 }

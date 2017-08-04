@@ -10,43 +10,50 @@ class UnapplyBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[(Boolean, String, String, Int)] =
-    fooCaseClasses.map {
+  def caseClass(cs: CaseClassData): IndexedSeq[(Boolean, String, String, Int)] =
+    cs.foos.map {
       case FooCaseClass(a, b, c, d) => (a, b, c, d)
     }
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[(Boolean, String, String, Int)] =
-    fooCaseClassesSpec.map {
+  def caseClassSpec(
+    cs: CaseClassData
+  ): IndexedSeq[(Boolean, String, String, Int)] =
+    cs.foosSpec.map {
       case caseclass.Foo(a, b, c, d) => (a, b, c, d)
     }
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[(Boolean, String, String, Int)] =
-    fooCaseClassesMeta.map {
+  def caseClassMeta(
+    cs: CaseClassData
+  ): IndexedSeq[(Boolean, String, String, Int)] =
+    cs.foosMeta.map {
       case FooMeta(a, b, c, d) => (a, b, c, d)
     }
 
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass
-    : IndexedSeq[(Option[Boolean], Option[Boolean], Option[String])] =
-    fooOptimizeHeapCaseClasses.map {
+  def optimizeHeapCaseClass(
+    oh: OptimizeHeapData
+  ): IndexedSeq[(Option[Boolean], Option[Boolean], Option[String])] =
+    oh.foos.map {
       case FooOptimizeHeapCaseClass(a, b, c) => (a, b, c)
     }
 
   @Benchmark
-  def optimizeHeapSpec
-    : IndexedSeq[(Option[Boolean], Option[Boolean], Option[String])] =
-    fooOptimizeHeapSpec.map {
+  def optimizeHeapSpec(
+    oh: OptimizeHeapData
+  ): IndexedSeq[(Option[Boolean], Option[Boolean], Option[String])] =
+    oh.foosSpec.map {
       case optimiseheap.Foo(a, b, c) => (a, b, c)
     }
 
   @Benchmark
-  def optimizeHeapMeta
-    : IndexedSeq[(Option[Boolean], Option[Boolean], Option[String])] =
-    fooOptimizeHeapMeta.map {
+  def optimizeHeapMeta(
+    oh: OptimizeHeapData
+  ): IndexedSeq[(Option[Boolean], Option[Boolean], Option[String])] =
+    oh.foosMeta.map {
       case FooMetaOptimiseHeap(a, b, c) => (a, b, c)
     }
 }

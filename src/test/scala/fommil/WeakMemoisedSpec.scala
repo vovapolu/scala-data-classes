@@ -5,6 +5,7 @@ import testing.weakmemoised._
 import _root_.scala._
 import _root_.scala.Predef._
 import java.io._
+import java.lang.System
 
 import org.scalatest._
 import org.scalatest.Matchers._
@@ -147,6 +148,9 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
     val foos = data.map {
       case (b, s) => Foo(b, s)
     }
+    System.gc()
+    System.runFinalization()
+    System.gc()
 
     Random.setSeed(4242L)
     for (_ <- 1 to 10000) {
@@ -162,6 +166,9 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
     val data = (1 to 10000).map(
       _ => (Random.nextBoolean(), Random.nextString(Random.nextInt(100)))
     )
+    System.gc()
+    System.runFinalization()
+    System.gc()
 
     val foos = data.map {
       case (b, s) => Foo(b, s)

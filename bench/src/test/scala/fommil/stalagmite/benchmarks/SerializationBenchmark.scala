@@ -27,42 +27,44 @@ class SerializationBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[FooCaseClass[String]] =
-    readWriteClasses(fooCaseClasses)
+  def caseClass(cs: CaseClassData): IndexedSeq[FooCaseClass[String]] =
+    readWriteClasses(cs.foos)
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[caseclass.Foo[String]] =
-    readWriteClasses(fooCaseClassesSpec)
+  def caseClassSpec(cs: CaseClassData): IndexedSeq[caseclass.Foo[String]] =
+    readWriteClasses(cs.foosSpec)
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[FooMeta[String]] =
-    readWriteClasses(fooCaseClassesMeta)
+  def caseClassMeta(cs: CaseClassData): IndexedSeq[FooMeta[String]] =
+    readWriteClasses(cs.foosMeta)
 
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass: IndexedSeq[FooOptimizeHeapCaseClass] =
-    readWriteClasses(fooOptimizeHeapCaseClasses)
+  def optimizeHeapCaseClass(
+    oh: OptimizeHeapData
+  ): IndexedSeq[FooOptimizeHeapCaseClass] =
+    readWriteClasses(oh.foos)
 
   @Benchmark
-  def optimizeHeapSpec: IndexedSeq[optimiseheap.Foo] =
-    readWriteClasses(fooOptimizeHeapSpec)
+  def optimizeHeapSpec(oh: OptimizeHeapData): IndexedSeq[optimiseheap.Foo] =
+    readWriteClasses(oh.foosSpec)
 
   @Benchmark
-  def optimizeHeapMeta: IndexedSeq[FooMetaOptimiseHeap] =
-    readWriteClasses(fooOptimizeHeapMeta)
+  def optimizeHeapMeta(oh: OptimizeHeapData): IndexedSeq[FooMetaOptimiseHeap] =
+    readWriteClasses(oh.foosMeta)
 
   // memoised
 
   @Benchmark
-  def memoisedCaseClass: IndexedSeq[FooMemoisedCaseClass] =
-    readWriteClasses(fooMemoisedCaseClasses)
+  def memoisedCaseClass(m: MemoisedData): IndexedSeq[FooMemoisedCaseClass] =
+    readWriteClasses(m.foos)
 
   @Benchmark
-  def memoisedSpec: IndexedSeq[memoised.Foo] =
-    readWriteClasses(fooMemoisedSpec)
+  def memoisedSpec(m: MemoisedData): IndexedSeq[memoised.Foo] =
+    readWriteClasses(m.foosSpec)
 
   @Benchmark
-  def memoisedMeta: IndexedSeq[FooMetaMemoised] =
-    readWriteClasses(fooMemoisedMeta)
+  def memoisedMeta(m: MemoisedData): IndexedSeq[FooMetaMemoised] =
+    readWriteClasses(m.foosMeta)
 }

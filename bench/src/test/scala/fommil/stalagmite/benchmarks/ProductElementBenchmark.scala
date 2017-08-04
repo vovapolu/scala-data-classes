@@ -8,8 +8,8 @@ class ProductElementBenchmark {
   // case class
 
   @Benchmark
-  def caseClass: IndexedSeq[(Any, Any, Any, Any)] =
-    fooCaseClasses.map(
+  def caseClass(cs: CaseClassData): IndexedSeq[(Any, Any, Any, Any)] =
+    cs.foos.map(
       foo =>
         (foo.productElement(0),
          foo.productElement(1),
@@ -18,8 +18,8 @@ class ProductElementBenchmark {
     )
 
   @Benchmark
-  def caseClassSpec: IndexedSeq[(Any, Any, Any, Any)] =
-    fooCaseClassesSpec.map(
+  def caseClassSpec(cs: CaseClassData): IndexedSeq[(Any, Any, Any, Any)] =
+    cs.foosSpec.map(
       foo =>
         (foo.productElement(0),
          foo.productElement(1),
@@ -28,8 +28,8 @@ class ProductElementBenchmark {
     )
 
   @Benchmark
-  def caseClassMeta: IndexedSeq[(Any, Any, Any, Any)] =
-    fooCaseClassesMeta.map(
+  def caseClassMeta(cs: CaseClassData): IndexedSeq[(Any, Any, Any, Any)] =
+    cs.foosMeta.map(
       foo =>
         (foo.productElement(0),
          foo.productElement(1),
@@ -40,15 +40,15 @@ class ProductElementBenchmark {
   // optimize heap
 
   @Benchmark
-  def optimizeHeapCaseClass: IndexedSeq[(Any, Any, Any)] =
-    fooOptimizeHeapCaseClasses.map(
+  def optimizeHeapCaseClass(oh: OptimizeHeapData): IndexedSeq[(Any, Any, Any)] =
+    oh.foos.map(
       foo =>
         (foo.productElement(0), foo.productElement(1), foo.productElement(2))
     )
 
   @Benchmark
-  def optimizeHeapMeta: IndexedSeq[(Any, Any, Any)] =
-    fooOptimizeHeapMeta.map(
+  def optimizeHeapMeta(oh: OptimizeHeapData): IndexedSeq[(Any, Any, Any)] =
+    oh.foosMeta.map(
       foo =>
         (foo.productElement(0), foo.productElement(1), foo.productElement(2))
     )
