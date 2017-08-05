@@ -86,9 +86,9 @@ final object Foo extends scala.Serializable {
 
   // if there are no type parameters on the class, this can be a val
   // (*sigh* if only scala had language support for singleton symbols...)
-  import shapeless.{ ::, Generic, HNil, LabelledGeneric, TypeCase, Typeable }
-  import shapeless.labelled.{ field, FieldType }
+  import shapeless.labelled.{FieldType, field}
   import shapeless.syntax.singleton._
+  import shapeless.{::, Generic, HNil, LabelledGeneric, TypeCase, Typeable}
   // it might be possible to avoid these tagged symbols inside scala.meta
   val a_tpe = 'a.narrow
   val s_tpe = 's.narrow

@@ -102,9 +102,9 @@ final object Foo
   ): Option[(Option[Boolean], Option[Boolean], Option[String])] =
     Some((f.a, f.b, f.s))
 
-  import shapeless.{ ::, Generic, HNil, LabelledGeneric, Typeable }
   import shapeless.labelled.{ field, FieldType }
   import shapeless.syntax.singleton._
+  import shapeless.{ ::, Generic, HNil, LabelledGeneric, Typeable }
   val a_tpe = 'a.narrow
   val b_tpe = 'b.narrow
   val s_tpe = 's.narrow

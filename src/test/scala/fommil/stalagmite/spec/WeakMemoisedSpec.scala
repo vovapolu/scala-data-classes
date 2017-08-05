@@ -1,4 +1,4 @@
-package fommil
+package fommil.stalagmite.spec
 
 import testing.weakmemoised._
 
@@ -7,9 +7,9 @@ import _root_.scala.Predef._
 import java.io._
 import java.lang.System
 
-import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
+import org.scalatest._
 import org.slf4j.LoggerFactory
 import shapeless._
 

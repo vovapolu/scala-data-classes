@@ -1,10 +1,10 @@
-package fommil
+package fommil.stalagmite.spec
 
 import _root_.scala._
 import _root_.scala.Predef._
 import fommil.stalagmite.{ DataImpl, DataMods }
-import org.scalatest._
 import org.scalatest.Matchers._
+import org.scalatest._
 
 import scala.collection.immutable.Seq
 import scala.io

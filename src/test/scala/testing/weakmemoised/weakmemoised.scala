@@ -136,9 +136,9 @@ final object Foo extends ((Boolean, String) => Foo) with scala.Serializable {
   }
   def unapply(f: Foo): Option[(Boolean, String)] = Some((f.a, f.s))
 
-  import shapeless.{ ::, Generic, HNil, LabelledGeneric, Typeable }
   import shapeless.labelled.{ field, FieldType }
   import shapeless.syntax.singleton._
+  import shapeless.{ ::, Generic, HNil, LabelledGeneric, Typeable }
 
   val a_tpe = 'a.narrow
   val s_tpe = 's.narrow
