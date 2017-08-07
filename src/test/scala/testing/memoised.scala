@@ -45,6 +45,7 @@ final class Foo private (
   @throws[java.io.IOException]
   @throws[java.lang.ClassNotFoundException]
   private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+    // these will be memoised by readResolve
     _a = in.readBoolean()
     _s = in.readUTF()
   }
