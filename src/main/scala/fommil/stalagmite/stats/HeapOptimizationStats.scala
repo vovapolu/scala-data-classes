@@ -129,9 +129,15 @@ object HeapOptimizationStats {
           @SuppressWarnings(Array("org.wartremover.warts.Null"))
           val fullPack: Term = bitPos.optionBit match {
             case Some(oBit) =>
+              val dummyVal = if (needVal) {
+                Seq(DataInfo.dummyValForPrimitive(typeWithoutOption))
+              } else {
+                Seq()
+              }
               q"""
                   if ($param == None) {
                     _bitmask |= (1 << ${Lit.Int(oBit)})
+                    ..$dummyVal
                   } else {
                     $fieldPack
                   }

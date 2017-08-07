@@ -14,12 +14,7 @@ object BenchmarkData {
                                       s: Option[String])
   case class FooMemoisedCaseClass(b: Boolean, s: String)
 
-  def generateWithDuplicates[T](generator: Unit => T,
-                                genCount: Int,
-                                duplicatesCount: Int): IndexedSeq[T] = {
-    val data = (1 to genCount).map(_ => generator(()))
-    data ++ (1 to duplicatesCount).map(_ => data(Random.nextInt(data.length)))
-  }
+  import fommil.stalagmite.TestUtils._
 
   val dataSize        = 10000
   val duplicatesRatio = 0.2
@@ -60,18 +55,11 @@ object BenchmarkData {
     def setup(): Unit = {
       Random.setSeed(0xCAFE)
       data = {
-        def nextOption[T](value: => T, someProb: Double = 0.5): Option[T] =
-          if (Random.nextDouble < someProb) {
-            Some(value)
-          } else {
-            None
-          }
-
         generateWithDuplicates(
           _ =>
-            (nextOption(Random.nextBoolean),
-             nextOption(Random.nextBoolean),
-             nextOption(Random.nextString(10))),
+            (randomNextOption(Random.nextBoolean),
+             randomNextOption(Random.nextBoolean),
+             randomNextOption(Random.nextString(10))),
           (dataSize * (1 - duplicatesRatio)).toInt,
           (dataSize * duplicatesRatio).toInt
         )

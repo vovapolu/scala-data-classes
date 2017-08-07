@@ -59,6 +59,19 @@ object DataInfo {
         true
       case _ => false
     }
+
+  def dummyValForPrimitive(tpe: Type): Term =
+    tpe match {
+      case t"Boolean" => q"false"
+      case t"Byte"    => q"0.toByte"
+      case t"Short"   => q"0.toShort"
+      case t"Char"    => q"0.toChar"
+      case t"Int"     => q"0"
+      case t"Long"    => q"0L"
+      case t"Float"   => q"0.0f"
+      case t"Double"  => q"0.0"
+      case _          => q"_"
+    }
 }
 
 object DataMods {
