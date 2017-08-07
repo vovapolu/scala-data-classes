@@ -1,4 +1,4 @@
-package fommil
+package fommil.stalagmite.spec
 
 import _root_.scala._
 import _root_.scala.Predef._

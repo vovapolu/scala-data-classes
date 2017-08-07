@@ -8,10 +8,9 @@ import _root_.scala.Predef._
 
 import java.io._
 
-import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.OptionValues._
-
+import org.scalatest._
 import shapeless._
 
 class CaseClassParitySpec extends FlatSpec with ParallelTestExecution {

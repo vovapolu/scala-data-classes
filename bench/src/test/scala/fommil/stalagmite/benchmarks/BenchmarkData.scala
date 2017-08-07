@@ -32,7 +32,7 @@ object BenchmarkData {
     var foosMeta: IndexedSeq[FooMeta[String]]            = _
 
     @Setup
-    def setup: Unit = {
+    def setup(): Unit = {
       Random.setSeed(0xBABE)
       data = generateWithDuplicates(
         _ =>
@@ -57,7 +57,7 @@ object BenchmarkData {
     var foosMeta: IndexedSeq[FooMetaOptimiseHeap]                            = _
 
     @Setup
-    def setup: Unit = {
+    def setup(): Unit = {
       Random.setSeed(0xCAFE)
       data = {
         def nextOption[T](value: => T, someProb: Double = 0.5): Option[T] =
@@ -93,7 +93,7 @@ object BenchmarkData {
     var foosMeta: IndexedSeq[FooMetaMemoised]  = _
 
     @Setup
-    def setup: Unit = {
+    def setup(): Unit = {
       Random.setSeed(0xFEEL)
       data = {
         generateWithDuplicates(
@@ -117,7 +117,7 @@ object BenchmarkData {
     var comparingPairs: IndexedSeq[(Int, Int)] = _
 
     @Setup
-    def setup: Unit =
+    def setup(): Unit =
       comparingPairs = (1 to math.pow(dataSize.toDouble, 1.5).toInt)
         .map(_ => (Random.nextInt(dataSize), Random.nextInt(dataSize)))
   }
