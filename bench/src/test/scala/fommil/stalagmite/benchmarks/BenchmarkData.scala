@@ -3,7 +3,7 @@ package fommil.stalagmite.benchmarks
 import org.openjdk.jmh.annotations.{ Scope, Setup, State }
 import shapeless.{ cachedImplicit, Generic }
 import testing.meta._
-import testing.{ caseclass, memoised, optimiseheap }
+import testing.{ caseclass, memoised, optimiseheap, weakmemoised }
 
 import scala.util.Random
 
@@ -79,6 +79,7 @@ object BenchmarkData {
     var foos: IndexedSeq[FooMemoisedCaseClass] = _
     var foosSpec: IndexedSeq[memoised.Foo]     = _
     var foosMeta: IndexedSeq[FooMetaMemoised]  = _
+    var foosWeak: IndexedSeq[weakmemoised.Foo] = _
 
     @Setup
     def setup(): Unit = {
@@ -93,6 +94,7 @@ object BenchmarkData {
       foos = data.map { case (a, b)     => FooMemoisedCaseClass(a, b) }
       foosSpec = data.map { case (a, b) => memoised.Foo(a, b) }
       foosMeta = data.map { case (a, b) => FooMetaMemoised(a, b) }
+      foosWeak = data.map { case (a, b) => weakmemoised.Foo(a, b) }
     }
   }
 

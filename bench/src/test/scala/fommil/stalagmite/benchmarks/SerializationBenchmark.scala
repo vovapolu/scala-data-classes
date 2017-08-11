@@ -9,7 +9,7 @@ import java.io.{
 
 import org.openjdk.jmh.annotations.Benchmark
 import testing.meta._
-import testing.{ caseclass, memoised, optimiseheap }
+import testing.{ caseclass, memoised, optimiseheap, weakmemoised }
 
 class SerializationBenchmark {
 
@@ -67,4 +67,8 @@ class SerializationBenchmark {
   @Benchmark
   def memoisedMeta(m: MemoisedData): IndexedSeq[FooMetaMemoised] =
     readWriteClasses(m.foosMeta)
+
+  @Benchmark
+  def memoisedWeak(m: MemoisedData): IndexedSeq[weakmemoised.Foo] =
+    readWriteClasses(m.foosWeak)
 }

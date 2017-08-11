@@ -10,6 +10,7 @@ lazy val stalagmite = (project in file("."))
     ),
     libraryDependencies ++= Seq(
       "com.google.guava"           % "guava" % "22.0" % "test",
+      "com.google.guava"           % "guava-testlib" % "18.0" % "test",
       "org.ensime"                 %% "pcplod" % "1.2.1" % "test",
       "org.typelevel"              %% "cats" % "0.9.0" % "test",
       "org.typelevel"              %% "kittens" % "1.0.0-M10" % "test",

@@ -45,4 +45,8 @@ class ToStringBenchmark {
   @Benchmark
   def memoisedMeta(m: MemoisedData): IndexedSeq[String] =
     m.foosMeta.map(_.toString)
+
+  @Benchmark
+  def memoisedWeak(m: MemoisedData): IndexedSeq[String] =
+    m.foosWeak.map(_.toString)
 }

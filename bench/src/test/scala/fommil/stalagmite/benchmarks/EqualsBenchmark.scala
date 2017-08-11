@@ -73,4 +73,11 @@ class EqualsBenchmark {
       case (ind1, ind2) =>
         m.foosMeta(ind1) == m.foosMeta(ind2)
     }
+
+  @Benchmark
+  def memoisedWeak(m: MemoisedData, e: EqualsData): IndexedSeq[Boolean] =
+    e.comparingPairs.map {
+      case (ind1, ind2) =>
+        m.foosWeak(ind1) == m.foosWeak(ind2)
+    }
 }

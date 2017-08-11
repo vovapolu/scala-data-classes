@@ -2,9 +2,10 @@ package fommil.stalagmite
 
 import _root_.scala._
 import _root_.scala.Predef._
-
 import scala.util.Random
-import java.lang.System
+import java.lang.Runtime
+
+import com.google.common.testing.GcFinalization
 
 object TestUtils {
 
@@ -24,23 +25,24 @@ object TestUtils {
 
   def measureMemoryConsumption[T](name: String,
                                   repeats: Int = 5)(u: => T): Unit = {
-    val rt = java.lang.Runtime.getRuntime
-
     println(name)
+    val rt            = Runtime.getRuntime
+    GcFinalization.awaitFullGc()
+    val initialMemory = rt.totalMemory - rt.freeMemory
     val ms = for (i <- 1 to repeats)
       yield {
-        System.gc()
-        System.runFinalization()
-        System.gc()
+        GcFinalization.awaitFullGc()
         val startMemory = rt.totalMemory - rt.freeMemory
         val t           = u
-        System.gc()
-        System.runFinalization()
-        System.gc()
+        GcFinalization.awaitFullGc()
         val finishMemory = rt.totalMemory - rt.freeMemory
 
         val consumedMemory = finishMemory - startMemory
-        println(s"Iteration $i: ${consumedMemory / 1024} kb")
+        val totallMemory   = finishMemory - initialMemory
+        println(
+          s"Iteration $i: consumed ${consumedMemory / 1024} kb, " +
+            s"totally ${totallMemory / 1024} kb"
+        )
         consumedMemory
       }
 

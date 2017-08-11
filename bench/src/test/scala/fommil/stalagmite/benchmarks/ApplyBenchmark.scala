@@ -2,7 +2,7 @@ package fommil.stalagmite.benchmarks
 
 import org.openjdk.jmh.annotations.Benchmark
 import testing.meta._
-import testing.{ caseclass, memoised, optimiseheap }
+import testing.{ caseclass, memoised, optimiseheap, weakmemoised }
 
 class ApplyBenchmark {
 
@@ -51,4 +51,8 @@ class ApplyBenchmark {
   @Benchmark
   def memoisedMeta(m: MemoisedData): IndexedSeq[FooMetaMemoised] =
     m.data.map { case (a, b) => FooMetaMemoised(a, b) }
+
+  @Benchmark
+  def memoisedWeak(m: MemoisedData): IndexedSeq[weakmemoised.Foo] =
+    m.data.map { case (a, b) => weakmemoised.Foo(a, b) }
 }

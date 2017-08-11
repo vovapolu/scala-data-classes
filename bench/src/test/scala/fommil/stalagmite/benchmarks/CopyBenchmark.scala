@@ -3,7 +3,7 @@ package fommil.stalagmite.benchmarks
 import org.openjdk.jmh.annotations.Benchmark
 
 import testing.meta._
-import testing.{ caseclass, memoised, optimiseheap }
+import testing.{ caseclass, memoised, optimiseheap, weakmemoised }
 import scala.util.Random
 
 class CopyBenchmark {
@@ -84,6 +84,15 @@ class CopyBenchmark {
     m: MemoisedData
   ): IndexedSeq[(FooMetaMemoised, FooMetaMemoised)] =
     m.foosMeta.map(
+      foo =>
+        (foo.copy(a = Random.nextBoolean), foo.copy(s = Random.nextString(1)))
+    )
+
+  @Benchmark
+  def memoisedWeak(
+    m: MemoisedData
+  ): IndexedSeq[(weakmemoised.Foo, weakmemoised.Foo)] =
+    m.foosWeak.map(
       foo =>
         (foo.copy(a = Random.nextBoolean), foo.copy(s = Random.nextString(1)))
     )
