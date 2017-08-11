@@ -9,6 +9,19 @@ import scala.util.Random
 class CopyBenchmark {
   import BenchmarkData._
 
+  // jmh:run -i 15 -wi 15 -f1 -t10 .*CopyBenchmark
+  // Benchmark                             Mode  Cnt    Score    Error  Units
+  // CopyBenchmark.caseClass              thrpt   15  327.730 ± 18.481  ops/s
+  // CopyBenchmark.caseClassMeta          thrpt   15  349.824 ±  4.059  ops/s
+  // CopyBenchmark.caseClassSpec          thrpt   15  352.282 ±  2.965  ops/s
+  // CopyBenchmark.memoisedCaseClass      thrpt   15  468.774 ± 23.296  ops/s
+  // CopyBenchmark.memoisedMeta           thrpt   15  168.356 ± 15.942  ops/s
+  // CopyBenchmark.memoisedSpec           thrpt   15  140.182 ±  7.951  ops/s
+  // CopyBenchmark.memoisedWeak           thrpt   15  145.621 ± 23.489  ops/s
+  // CopyBenchmark.optimizeHeapCaseClass  thrpt   15  786.416 ± 37.324  ops/s
+  // CopyBenchmark.optimizeHeapMeta       thrpt   15  481.235 ±  6.521  ops/s
+  // CopyBenchmark.optimizeHeapSpec       thrpt   15  469.321 ±  8.296  ops/s
+
   // case class
 
   @Benchmark

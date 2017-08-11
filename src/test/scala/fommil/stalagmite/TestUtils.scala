@@ -26,7 +26,7 @@ object TestUtils {
   def measureMemoryConsumption[T](name: String,
                                   repeats: Int = 5)(u: => T): Unit = {
     println(name)
-    val rt            = Runtime.getRuntime
+    val rt = Runtime.getRuntime
     GcFinalization.awaitFullGc()
     val initialMemory = rt.totalMemory - rt.freeMemory
     val ms = for (i <- 1 to repeats)
