@@ -13,6 +13,7 @@ import org.scalatest._
 import org.slf4j.LoggerFactory
 import shapeless._
 
+import scala.collection.mutable
 import scala.util.Random
 
 // intentionally parallel to try and flush out concurrency issues
@@ -159,8 +160,8 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
     }
   }
 
-  it should "withstand intense creating of random data" in {
-    Random.setSeed(0xCAFEBABEL)
+  it should "withstand intense creating of random data №1" in {
+    Random.setSeed(0xCAFEBABE)
     val data = (1 to 10000).map(
       _ => (Random.nextBoolean(), Random.nextString(Random.nextInt(100)))
     )
@@ -175,6 +176,30 @@ class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
       val (b, s) = data(ind)
       Foo(b, s) should be theSameInstanceAs foos(ind)
       Foo(b, s).s should be theSameInstanceAs foos(ind).s
+    }
+  }
+
+  it should "withstand intense creating of random data №2" in {
+    Random.setSeed(0x0000BABE)
+    val pool = mutable.ArrayBuffer.empty[Foo]
+    for (i <- 1 to 500000) {
+      val prob = Random.nextDouble()
+      if (pool.isEmpty || prob < 0.05) {
+        pool += Foo(Random.nextBoolean(), Random.nextString(1))
+      } else if (prob < 0.5) {
+        val ind = Random.nextInt(pool.length)
+        pool += Foo(pool(ind).a, pool(ind).s)
+      } else if (prob < 0.999) {
+        val ind1 = Random.nextInt(pool.length)
+        val ind2 = Random.nextInt(pool.length)
+        if (pool(ind1).a == pool(ind2).a && pool(ind1).s == pool(ind2).s) {
+          pool(ind1) should be theSameInstanceAs pool(ind2)
+        } else {
+          pool(ind1) shouldNot be theSameInstanceAs pool(ind2)
+        }
+      } else {
+        GcFinalization.awaitFullGc()
+      }
     }
   }
 }
