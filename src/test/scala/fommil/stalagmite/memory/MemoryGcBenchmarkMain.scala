@@ -129,7 +129,7 @@ object MemoryGcBenchmarkMain extends App {
     _ =>
       (
         Random.nextBoolean(),
-        Random.nextString(1),
+        Random.nextString(1)
     )
   )
 
@@ -137,7 +137,7 @@ object MemoryGcBenchmarkMain extends App {
     _ =>
       (
         Random.nextBoolean(),
-        Random.nextString(2),
+        Random.nextString(2)
     )
   )
 

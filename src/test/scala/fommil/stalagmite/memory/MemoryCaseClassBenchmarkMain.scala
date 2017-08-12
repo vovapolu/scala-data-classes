@@ -46,7 +46,7 @@ object MemoryCaseClassBenchmarkMain extends App {
       (
         Random.nextInt(1000),
         Random.nextBoolean(),
-        Random.nextString(5),
+        Random.nextString(5)
     )
   )
 
