@@ -2,10 +2,16 @@ package fommil.stalagmite.memory
 
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{ data, TestUtils }
+import fommil.stalagmite.data
+import fommil.stalagmite.TestUtils._
+
+import org.scalacheck._
+import Arbitrary.arbitrary
+
+import org.scalacheck.rng.Seed
+import shapeless.tag.@@
 
 import testing.weakmemoised
-import scala.util.Random
 
 // CAUTION: Don't run there benchmarks with `sbt "runMain ..."`
 // GC in SBT may behave in really strange way,
@@ -72,25 +78,25 @@ object MemoryGcBenchmarkMain extends App {
   //    mean - 116101 kb
   //  std  - 13331.36 kb
   //
-  //  Strong memoisation with internal caching
+  //  Strong memoisation with String caching
   //    Iteration 1: consumed 142670 kb, totally 142671 kb
   //    Iteration 2: consumed 150420 kb, totally 293000 kb
   //    Iteration 3: consumed 133533 kb, totally 426443 kb
   //    Iteration 4: consumed 164911 kb, totally 591255 kb
   //    Iteration 5: consumed 133146 kb, totally 724310 kb
   //
-  //  Strong memoisation with internal caching:
+  //  Strong memoisation with String caching:
   //    mean - 144936 kb
   //    std  - 26518.15 kb
   //
-  //  Weak memoisation
+  //  Data class with weak memoisation
   //    Iteration 1: consumed 46322 kb, totally 46322 kb
   //    Iteration 2: consumed -431 kb, totally 44393 kb -- unfortunate gc call
   //    Iteration 3: consumed 1527 kb, totally 45130 kb
   //    Iteration 4: consumed 1516 kb, totally 45150 kb
   //    Iteration 5: consumed 1510 kb, totally 45163 kb
   //
-  //  Weak memoisation:
+  //  Data class with weak memoisation:
   //    mean - 10089 kb
   //    std  - 40544.90 kb
   //
@@ -125,24 +131,19 @@ object MemoryGcBenchmarkMain extends App {
   )
   class FooMetaWithRefs(b: Boolean, s: String)
 
-  def generateRepeatingData = (1 to 1000000).map(
-    _ =>
-      (
-        Random.nextBoolean(),
-        Random.nextString(1)
-    )
-  )
+  val repeatingGenerator =
+    Gen.listOfN(500000, arbitrary[(Boolean, String @@ SmallString)])
+  val distinctGenerator =
+    Gen.listOfN(500000, arbitrary[(Boolean, String @@ MeduimString)])
 
-  def generateDistinctData = (1 to 1000000).map(
-    _ =>
-      (
-        Random.nextBoolean(),
-        Random.nextString(2)
-    )
-  )
+  def generateRepeatingData =
+    repeatingGenerator.sample.getOrElse(List())
 
-  def mapData[T](data: () => IndexedSeq[(Boolean, String)],
-                 mapF: (Boolean, String) => T): IndexedSeq[T] =
+  def generateDistinctData =
+    distinctGenerator.sample.getOrElse(List())
+
+  def mapData[T](data: () => Seq[(Boolean, String)],
+                 mapF: (Boolean, String) => T): Seq[T] =
     data().map {
       case (a, b) => mapF(a, b)
     }
@@ -158,23 +159,27 @@ object MemoryGcBenchmarkMain extends App {
     println(text)
     println()
 
-    TestUtils.measureMemoryConsumption("Strong memoisation") {
+    prettyPrintResults("Strong memoisation", measureMemoryConsumption() {
       val res = mapData(data, FooMeta.apply)
       res.take(10000) ++ res.takeRight(10000)
-    }
-    TestUtils.measureMemoryConsumption(
-      "Strong memoisation with internal caching"
-    ) {
-      val res = mapData(data, FooMetaWithRefs.apply)
+    })
+    prettyPrintResults(
+      "Strong memoisation with String caching",
+      measureMemoryConsumption() {
+        val res = mapData(data, FooMetaWithRefs.apply)
+        res.take(10000) ++ res.takeRight(10000)
+      }
+    )
+    prettyPrintResults("Data class with weak memoisation",
+                       measureMemoryConsumption() {
+                         val res = mapData(data, FooMetaWeak.apply)
+                         res.take(10000) ++ res.takeRight(10000)
+                       })
+
+    prettyPrintResults("Weak memoisation spec", measureMemoryConsumption() {
+      val res =
+        mapData(data, weakmemoised.Foo.apply)
       res.take(10000) ++ res.takeRight(10000)
-    }
-    TestUtils.measureMemoryConsumption("Weak memoisation") {
-      val res = mapData(data, FooMetaWeak.apply)
-      res.take(10000) ++ res.takeRight(10000)
-    }
-    TestUtils.measureMemoryConsumption("Weak memoisation spec") {
-      val res = mapData(data, weakmemoised.Foo.apply)
-      res.take(10000) ++ res.takeRight(10000)
-    }
+    })
   }
 }

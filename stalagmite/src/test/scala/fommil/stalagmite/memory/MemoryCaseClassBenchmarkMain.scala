@@ -2,9 +2,14 @@ package fommil.stalagmite.memory
 
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{ data, TestUtils }
+import fommil.stalagmite.data
+import fommil.stalagmite.TestUtils._
 
-import scala.util.Random
+import org.scalacheck._
+import Arbitrary.arbitrary
+
+import org.scalacheck.rng.Seed
+import shapeless.tag.@@
 
 // CAUTION: Don't run there benchmarks with `sbt "runMain ..."`
 // GC in SBT may behave in really strange way,
@@ -41,23 +46,21 @@ object MemoryCaseClassBenchmarkMain extends App {
 
   @data class FooMeta(i: Int, b: Boolean, s: String)
 
-  def generateData = (1 to 1000000).map(
-    _ =>
-      (
-        Random.nextInt(1000),
-        Random.nextBoolean(),
-        Random.nextString(5)
-    )
-  )
+  val generator =
+    Gen.listOfN(500000, arbitrary[(Int, Boolean, String @@ MeduimString)])
 
-  TestUtils.measureMemoryConsumption("Case class") {
+  def generateData =
+    generator(Gen.Parameters.default, Seed(0xBABE1)).getOrElse(List.empty)
+
+  prettyPrintResults("Case class", measureMemoryConsumption() {
     generateData.map {
       case (a, b, c) => Foo(a, b, c)
     }
-  }
-  TestUtils.measureMemoryConsumption("Data class") {
+  })
+
+  prettyPrintResults("Data class", measureMemoryConsumption() {
     generateData.map {
       case (a, b, c) => FooMeta(a, b, c)
     }
-  }
+  })
 }

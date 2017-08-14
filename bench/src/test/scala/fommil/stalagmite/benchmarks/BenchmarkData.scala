@@ -4,6 +4,10 @@ import org.openjdk.jmh.annotations.{ Scope, Setup, State }
 import shapeless.{ cachedImplicit, Generic }
 import testing.meta._
 import testing.{ caseclass, memoised, optimiseheap, weakmemoised }
+import org.scalacheck._
+import Arbitrary.arbitrary
+import org.scalacheck.rng.Seed
+import shapeless.tag.@@
 
 import scala.util.Random
 
@@ -16,8 +20,8 @@ object BenchmarkData {
 
   import fommil.stalagmite.TestUtils._
 
-  val dataSize        = 10000
-  val duplicatesRatio = 0.2
+  private[this] val dataSize        = 10000
+  private[this] val duplicatesRatio = 0.2
 
   @State(Scope.Benchmark)
   class CaseClassData {
@@ -28,16 +32,13 @@ object BenchmarkData {
 
     @Setup
     def setup(): Unit = {
-      Random.setSeed(0xBABE)
-      data = generateWithDuplicates(
-        _ =>
-          (Random.nextBoolean,
-           Random.nextString(10),
-           Random.nextString(20),
-           Random.nextInt),
+      data = vectorWithDuplicates(
+        arbitrary[
+          (Boolean, String @@ MeduimString, String @@ MeduimString, Int)
+        ],
         (dataSize * (1 - duplicatesRatio)).toInt,
         (dataSize * duplicatesRatio).toInt
-      )
+      ).apply(Gen.Parameters.default, Seed(0xCAFEL)).getOrElse(Vector.empty)
       foos = data.map { case (a, b, c, d)     => FooCaseClass(a, b, c, d) }
       foosSpec = data.map { case (a, b, c, d) => caseclass.Foo(a, b, c, d) }
       foosMeta = data.map { case (a, b, c, d) => FooMeta(a, b, c, d) }
@@ -53,16 +54,14 @@ object BenchmarkData {
 
     @Setup
     def setup(): Unit = {
-      Random.setSeed(0xCAFE)
       data = {
-        generateWithDuplicates(
-          _ =>
-            (randomNextOption(Random.nextBoolean),
-             randomNextOption(Random.nextBoolean),
-             randomNextOption(Random.nextString(10))),
+        vectorWithDuplicates(
+          arbitrary[
+            (Option[Boolean], Option[Boolean], Option[String @@ MeduimString])
+          ],
           (dataSize * (1 - duplicatesRatio)).toInt,
           (dataSize * duplicatesRatio).toInt
-        )
+        ).apply(Gen.Parameters.default, Seed(0xCAFE2L)).getOrElse(Vector.empty)
       }
 
       foos = data.map {
@@ -85,11 +84,13 @@ object BenchmarkData {
     def setup(): Unit = {
       Random.setSeed(0xFEEL)
       data = {
-        generateWithDuplicates(
-          _ => (Random.nextBoolean, Random.nextString(10)),
+        vectorWithDuplicates(
+          arbitrary[
+            (Boolean, String @@ MeduimString)
+          ],
           (dataSize * (1 - duplicatesRatio)).toInt,
           (dataSize * duplicatesRatio).toInt
-        )
+        ).apply(Gen.Parameters.default, Seed(0xCAFE3L)).getOrElse(Vector.empty)
       }
       foos = data.map { case (a, b)     => FooMemoisedCaseClass(a, b) }
       foosSpec = data.map { case (a, b) => memoised.Foo(a, b) }
@@ -104,11 +105,18 @@ object BenchmarkData {
 
   @State(Scope.Benchmark)
   class EqualsData {
-    var comparingPairs: IndexedSeq[(Int, Int)] = _
+    var comparingPairs: Seq[(Int, Int)] = _
 
     @Setup
-    def setup(): Unit =
-      comparingPairs = (1 to math.pow(dataSize.toDouble, 1.5).toInt)
-        .map(_ => (Random.nextInt(dataSize), Random.nextInt(dataSize)))
+    def setup(): Unit = {
+      val pairsGen = Gen
+        .listOfN(
+          math.pow(dataSize.toDouble, 1.5).toInt,
+          Gen.zip(Gen.choose(0, dataSize), Gen.choose(0, dataSize))
+        )
+
+      comparingPairs =
+        pairsGen(Gen.Parameters.default, Seed(0xCAFE4L)).getOrElse(List.empty)
+    }
   }
 }

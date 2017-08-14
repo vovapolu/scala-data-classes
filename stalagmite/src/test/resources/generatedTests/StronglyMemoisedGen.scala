@@ -37,7 +37,7 @@ class A[T](i: Int, t: T, b: Boolean)
       override def hashCode: Int = d.hashCode
       override def equals(o: Any): Boolean = o match {
         case that: AWithValueEquality[_] if this.hashCode == that.hashCode =>
-          that.d.i == this.d.i && that.d.t == this.d.t && that.d.b == this.d.b
+          this.d.i == that.d.i && this.d.t == that.d.t && this.d.b == that.d.b
         case _ =>
           false
       }

@@ -83,7 +83,7 @@ object MemoisationStats {
           }
           val wrapperCaseBody = {
             val eqs = dataInfo.classParamNames.map(
-              paramName => q"that.d.$paramName == this.d.$paramName"
+              paramName => q"this.d.$paramName == that.d.$paramName"
             )
             eqs match {
               case Seq(eq1) =>

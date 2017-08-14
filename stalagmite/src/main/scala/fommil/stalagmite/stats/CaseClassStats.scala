@@ -86,7 +86,7 @@ object CaseClassStats {
   object DataEqualsStats extends DataStats {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = {
       val eqs = dataInfo.classParamNames.map(
-        paramName => q"that.$paramName == this.$paramName"
+        paramName => q"this.$paramName == that.$paramName"
       )
       val eqsWithAnds = eqs match {
         case Seq(eq1) =>

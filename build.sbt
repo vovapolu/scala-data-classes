@@ -1,11 +1,11 @@
-lazy val stalagmite = (project in file("."))
+lazy val stalagmite = project
   .settings(
     inThisBuild(
       Seq(
         organization := "com.fommil",
         sonatypeGithub := ("fommil", "stalagmite"),
         licenses := Seq(Apache2),
-        scalaVersion := "2.12.2"
+        scalaVersion := "2.12.3"
       )
     ),
     libraryDependencies ++= Seq(
@@ -20,7 +20,7 @@ lazy val stalagmite = (project in file("."))
       "org.scalameta"              %% "scalameta" % "1.8.0" % Provided
     ) ++ shapeless.value.map(_     % "test"),
     addCompilerPlugin(
-      "org.scalameta" % "paradise" % "3.0.0-M9" cross CrossVersion.full
+      "org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full
     ),
     scalacOptions += "-Xplugin-require:macroparadise",
     javaOptions in Test ++= Seq(
@@ -72,3 +72,11 @@ lazy val bench =
   project
     .dependsOn(stalagmite % "test->test")
     .enablePlugins(JmhPlugin)
+    .settings(
+      sourceDirectory in Jmh := (sourceDirectory in Test).value,
+      classDirectory in Jmh := (classDirectory in Test).value,
+      dependencyClasspath in Jmh := (dependencyClasspath in Test).value,
+      // rewire tasks, so that 'jmh:run' automatically invokes 'jmh:compile' (otherwise a clean 'jmh:run' would fail)
+      compile in Jmh := (compile in Jmh).dependsOn(compile in Test).value,
+      run in Jmh := (run in Jmh).dependsOn(compile in Jmh).evaluated
+    )

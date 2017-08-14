@@ -17,7 +17,7 @@ import scala.collection.mutable
 import scala.util.Random
 
 // intentionally parallel to try and flush out concurrency issues
-class WeakMemoisedSpec extends FlatSpec /*with ParallelTestExecution*/ {
+class WeakMemoisedSpec extends FlatSpec with ParallelTestExecution {
   val log = LoggerFactory.getLogger(this.getClass)
 
   val foo = Foo(true, "hello")

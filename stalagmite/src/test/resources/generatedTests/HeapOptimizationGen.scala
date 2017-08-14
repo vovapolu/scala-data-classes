@@ -32,7 +32,7 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
     }
     override def equals(thatAny: Any): Boolean = thatAny match {
       case that: Foo =>
-        (this eq that) || that.a == this.a && that.b == this.b && that.s == this.s && that.i == this.i
+        (this eq that) || this.a == that.a && this.b == that.b && this.s == that.s && this.i == that.i
       case _ =>
         false
     }

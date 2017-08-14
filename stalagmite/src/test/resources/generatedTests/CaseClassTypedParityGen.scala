@@ -12,7 +12,7 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
 
     override def equals(thatAny: Any): Boolean = thatAny match {
       case that: A[_, _] =>
-        (this eq that) || that.a == this.a && that.s == this.s && that.xy == this.xy
+        (this eq that) || this.a == that.a && this.s == that.s && this.xy == that.xy
       case _ =>
         false
     }

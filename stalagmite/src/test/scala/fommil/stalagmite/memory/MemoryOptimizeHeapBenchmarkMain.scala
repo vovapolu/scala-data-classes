@@ -1,10 +1,17 @@
 package fommil.stalagmite.memory
 
+import fommil.stalagmite.TestUtils.MeduimString
+
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{ data, TestUtils }
+import fommil.stalagmite.data
+import fommil.stalagmite.TestUtils._
 
-import scala.util.Random
+import org.scalacheck._
+import Arbitrary.arbitrary
+
+import org.scalacheck.rng.Seed
+import shapeless.tag.@@
 
 // CAUTION: Don't run there benchmarks with `sbt "runMain ..."`
 // GC in SBT may behave in really strange way,
@@ -55,26 +62,34 @@ object MemoryOptimizeHeapBenchmarkMain extends App {
                   b3: Option[Boolean],
                   b4: Option[Boolean])
 
-  def generateData = (1 to 1000000).map(
-    _ =>
-      (
-        TestUtils.randomNextOption(Random.nextInt(1000)),
-        TestUtils.randomNextOption(Random.nextString(5)),
-        TestUtils.randomNextOption(Random.nextBoolean()),
-        TestUtils.randomNextOption(Random.nextBoolean()),
-        TestUtils.randomNextOption(Random.nextBoolean()),
-        TestUtils.randomNextOption(Random.nextBoolean())
-    )
-  )
+  val generator =
+    Gen.listOfN(500000,
+                arbitrary[
+                  (Option[Int],
+                   Option[String @@ MeduimString],
+                   Option[Boolean],
+                   Option[Boolean],
+                   Option[Boolean],
+                   Option[Boolean])
+                ])
 
-  val foosMemory = TestUtils.measureMemoryConsumption("Case class") {
-    generateData.map {
-      case (a, b, c, d, e, f) => Foo(a, b, c, d, e, f)
+  def generateData =
+    generator(Gen.Parameters.default, Seed(0xBABE2)).getOrElse(List.empty)
+
+  prettyPrintResults(
+    "Case class",
+    measureMemoryConsumption() {
+      generateData.map {
+        case (a, b, c, d, e, f) => Foo(a, b, c, d, e, f)
+      }
     }
-  }
-  val foosMetaMemory = TestUtils.measureMemoryConsumption("Data class") {
-    generateData.map {
-      case (a, b, c, d, e, f) => FooMeta(a, b, c, d, e, f)
+  )
+  prettyPrintResults(
+    "Data class",
+    measureMemoryConsumption() {
+      generateData.map {
+        case (a, b, c, d, e, f) => FooMeta(a, b, c, d, e, f)
+      }
     }
-  }
+  )
 }

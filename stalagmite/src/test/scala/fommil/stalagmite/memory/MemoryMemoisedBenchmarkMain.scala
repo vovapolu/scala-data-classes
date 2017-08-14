@@ -2,10 +2,17 @@ package fommil.stalagmite.memory
 
 import _root_.scala._
 import _root_.scala.Predef._
-import fommil.stalagmite.{ data, TestUtils }
+import fommil.stalagmite.data
+import fommil.stalagmite._
+import fommil.stalagmite.TestUtils._
+
+import org.scalacheck._
+import Arbitrary.arbitrary
+
+import org.scalacheck.rng.Seed
+import shapeless.tag.@@
 
 import testing.weakmemoised
-import scala.util.Random
 
 // CAUTION: Don't run there benchmarks with `sbt "runMain ..."`
 // GC in SBT may behave in really strange way,
@@ -95,14 +102,14 @@ object MemoryMemoisedBenchmarkMain extends App {
   //    mean - 119721 kb
   //    std  - 10949.59 kb
   //
-  //  Data class with internal caching
+  //  Strong memoisation with String caching
   //    Iteration 1: consumed 147830 kb, totally 147830 kb
   //    Iteration 2: consumed 154268 kb, totally 297563 kb
   //    Iteration 3: consumed 138295 kb, totally 431086 kb
   //    Iteration 4: consumed 170201 kb, totally 596751 kb
   //    Iteration 5: consumed 137780 kb, totally 729995 kb
   //
-  //  Data class with internal caching:
+  //  Strong memoisation with String caching:
   //    mean - 149675 kb
   //    std  - 26773.13 kb
   //
@@ -150,24 +157,19 @@ object MemoryMemoisedBenchmarkMain extends App {
   )
   class FooMetaWithRefs(b: Boolean, s: String)
 
-  def generateRepeatingData = (1 to 1000000).map(
-    _ =>
-      (
-        Random.nextBoolean(),
-        Random.nextString(1)
-    )
-  )
+  val repeatingGenerator =
+    Gen.listOfN(100000, arbitrary[(Boolean, String @@ SmallString)])
+  val distinctGenerator =
+    Gen.listOfN(100000, arbitrary[(Boolean, String @@ MeduimString)])
 
-  def generateDistinctData = (1 to 1000000).map(
-    _ =>
-      (
-        Random.nextBoolean(),
-        Random.nextString(2)
-    )
-  )
+  def generateRepeatingData =
+    repeatingGenerator.sample.getOrElse(List())
 
-  def mapData[T](data: () => IndexedSeq[(Boolean, String)],
-                 mapF: (Boolean, String) => T): IndexedSeq[T] =
+  def generateDistinctData =
+    distinctGenerator.sample.getOrElse(List())
+
+  def mapData[T](data: () => Seq[(Boolean, String)],
+                 mapF: (Boolean, String) => T): Seq[T] =
     data().map {
       case (a, b) => mapF(a, b)
     }
@@ -183,20 +185,24 @@ object MemoryMemoisedBenchmarkMain extends App {
     println(text)
     println()
 
-    TestUtils.measureMemoryConsumption("Case class") {
+    prettyPrintResults("Case class", measureMemoryConsumption() {
       mapData(data, Foo)
-    }
-    TestUtils.measureMemoryConsumption("Data class with strong memoisation") {
-      mapData(data, FooMeta.apply)
-    }
-    TestUtils.measureMemoryConsumption("Data class with internal caching") {
-      mapData(data, FooMetaWithRefs.apply)
-    }
-    TestUtils.measureMemoryConsumption("Data class with weak memoisation") {
-      mapData(data, FooMetaWeak.apply)
-    }
-    TestUtils.measureMemoryConsumption("Weak memoisation spec") {
+    })
+
+    prettyPrintResults("Data class with strong memoisation",
+                       measureMemoryConsumption() {
+                         mapData(data, FooMeta.apply)
+                       })
+    prettyPrintResults("Strong memoisation with String caching",
+                       measureMemoryConsumption() {
+                         mapData(data, FooMetaWithRefs.apply)
+                       })
+    prettyPrintResults("Data class with weak memoisation",
+                       measureMemoryConsumption() {
+                         mapData(data, FooMetaWeak.apply)
+                       })
+    prettyPrintResults("Weak memoisation spec", measureMemoryConsumption() {
       mapData(data, weakmemoised.Foo.apply)
-    }
+    })
   }
 }

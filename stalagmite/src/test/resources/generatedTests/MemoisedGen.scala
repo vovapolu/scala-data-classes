@@ -13,7 +13,7 @@ class A[T](i: Int, t: T, b: Boolean)
 
     override def equals(thatAny: Any): Boolean = thatAny match {
       case that: A[_] =>
-        (this eq that) || that.i == this.i && that.t == this.t && that.b == this.b
+        (this eq that) || this.i == that.i && this.t == that.t && this.b == that.b
       case _ =>
         false
     }
