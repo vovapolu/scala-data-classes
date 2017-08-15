@@ -9,8 +9,6 @@ import Arbitrary.arbitrary
 import org.scalacheck.rng.Seed
 import shapeless.tag.@@
 
-import scala.util.Random
-
 object BenchmarkData {
   case class FooCaseClass[T](b: Boolean, s: String, t: T, i: Int)
   case class FooOptimizeHeapCaseClass(a: Option[Boolean],
@@ -20,7 +18,7 @@ object BenchmarkData {
 
   import fommil.stalagmite.TestUtils._
 
-  private[this] val dataSize        = 10000
+  private[this] val dataSize        = 5000
   private[this] val duplicatesRatio = 0.2
 
   @State(Scope.Benchmark)
@@ -34,7 +32,7 @@ object BenchmarkData {
     def setup(): Unit = {
       data = vectorWithDuplicates(
         arbitrary[
-          (Boolean, String @@ MeduimString, String @@ MeduimString, Int)
+          (Boolean, String @@ MediumString, String @@ MediumString, Int)
         ],
         (dataSize * (1 - duplicatesRatio)).toInt,
         (dataSize * duplicatesRatio).toInt
@@ -57,7 +55,7 @@ object BenchmarkData {
       data = {
         vectorWithDuplicates(
           arbitrary[
-            (Option[Boolean], Option[Boolean], Option[String @@ MeduimString])
+            (Option[Boolean], Option[Boolean], Option[String @@ MediumString])
           ],
           (dataSize * (1 - duplicatesRatio)).toInt,
           (dataSize * duplicatesRatio).toInt
@@ -74,28 +72,31 @@ object BenchmarkData {
 
   @State(Scope.Benchmark)
   class MemoisedData {
-    var data: IndexedSeq[(Boolean, String)]    = _
-    var foos: IndexedSeq[FooMemoisedCaseClass] = _
-    var foosSpec: IndexedSeq[memoised.Foo]     = _
-    var foosMeta: IndexedSeq[FooMetaMemoised]  = _
-    var foosWeak: IndexedSeq[weakmemoised.Foo] = _
+    var data: IndexedSeq[(Boolean, String)]               = _
+    var foos: IndexedSeq[FooMemoisedCaseClass]            = _
+    var foosSpec: IndexedSeq[memoised.Foo]                = _
+    var foosMeta: IndexedSeq[FooMetaMemoised]             = _
+    var foosWeakSpec: IndexedSeq[weakmemoised.Foo]        = _
+    var foosWeak: IndexedSeq[FooMetaMemoisedWeak]         = _
+    var foosInternMeta: IndexedSeq[FooMetaInternMemoised] = _
 
     @Setup
     def setup(): Unit = {
-      Random.setSeed(0xFEEL)
       data = {
         vectorWithDuplicates(
           arbitrary[
-            (Boolean, String @@ MeduimString)
+            (Boolean, String @@ MediumString)
           ],
           (dataSize * (1 - duplicatesRatio)).toInt,
           (dataSize * duplicatesRatio).toInt
         ).apply(Gen.Parameters.default, Seed(0xCAFE3L)).getOrElse(Vector.empty)
       }
-      foos = data.map { case (a, b)     => FooMemoisedCaseClass(a, b) }
-      foosSpec = data.map { case (a, b) => memoised.Foo(a, b) }
-      foosMeta = data.map { case (a, b) => FooMetaMemoised(a, b) }
-      foosWeak = data.map { case (a, b) => weakmemoised.Foo(a, b) }
+      foos = data.map { case (a, b)           => FooMemoisedCaseClass(a, b) }
+      foosSpec = data.map { case (a, b)       => memoised.Foo(a, b) }
+      foosMeta = data.map { case (a, b)       => FooMetaMemoised(a, b) }
+      foosWeakSpec = data.map { case (a, b)   => weakmemoised.Foo(a, b) }
+      foosWeak = data.map { case (a, b)       => FooMetaMemoisedWeak(a, b) }
+      foosInternMeta = data.map { case (a, b) => FooMetaInternMemoised(a, b) }
     }
   }
 
@@ -105,18 +106,20 @@ object BenchmarkData {
 
   @State(Scope.Benchmark)
   class EqualsData {
-    var comparingPairs: Seq[(Int, Int)] = _
+    var comparingPairs: IndexedSeq[(Int, Int)] = _
 
     @Setup
     def setup(): Unit = {
-      val pairsGen = Gen
-        .listOfN(
-          math.pow(dataSize.toDouble, 1.5).toInt,
-          Gen.zip(Gen.choose(0, dataSize), Gen.choose(0, dataSize))
-        )
+      val deltas = Gen
+        .listOfN(1000000, Gen.choose(-5, 5))(Gen.Parameters.default,
+                                             Seed(0xCAFE4L))
+        .getOrElse(List.empty)
 
-      comparingPairs =
-        pairsGen(Gen.Parameters.default, Seed(0xCAFE4L)).getOrElse(List.empty)
+      comparingPairs = (1 to 1000000).zip(deltas).map {
+        case (i, delta) =>
+          (i % dataSize,
+           math.max(0, math.min(dataSize - 1, i % dataSize + delta)))
+      }
     }
   }
 }

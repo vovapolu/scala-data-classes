@@ -82,6 +82,6 @@ class SerializationBenchmark {
     readWriteClasses(m.foosMeta)
 
   @Benchmark
-  def memoisedWeak(m: MemoisedData): IndexedSeq[weakmemoised.Foo] =
-    readWriteClasses(m.foosWeak)
+  def memoisedWeakSpec(m: MemoisedData): IndexedSeq[weakmemoised.Foo] =
+    readWriteClasses(m.foosWeakSpec)
 }

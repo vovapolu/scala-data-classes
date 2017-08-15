@@ -1,6 +1,6 @@
 package fommil.stalagmite.memory
 
-import fommil.stalagmite.TestUtils.MeduimString
+import fommil.stalagmite.TestUtils.MediumString
 
 import _root_.scala._
 import _root_.scala.Predef._
@@ -66,7 +66,7 @@ object MemoryOptimizeHeapBenchmarkMain extends App {
     Gen.listOfN(500000,
                 arbitrary[
                   (Option[Int],
-                   Option[String @@ MeduimString],
+                   Option[String @@ MediumString],
                    Option[Boolean],
                    Option[Boolean],
                    Option[Boolean],

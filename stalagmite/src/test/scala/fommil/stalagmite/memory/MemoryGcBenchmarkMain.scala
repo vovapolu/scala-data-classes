@@ -8,7 +8,6 @@ import fommil.stalagmite.TestUtils._
 import org.scalacheck._
 import Arbitrary.arbitrary
 
-import org.scalacheck.rng.Seed
 import shapeless.tag.@@
 
 import testing.weakmemoised
@@ -134,7 +133,7 @@ object MemoryGcBenchmarkMain extends App {
   val repeatingGenerator =
     Gen.listOfN(500000, arbitrary[(Boolean, String @@ SmallString)])
   val distinctGenerator =
-    Gen.listOfN(500000, arbitrary[(Boolean, String @@ MeduimString)])
+    Gen.listOfN(500000, arbitrary[(Boolean, String @@ MediumString)])
 
   def generateRepeatingData =
     repeatingGenerator.sample.getOrElse(List())

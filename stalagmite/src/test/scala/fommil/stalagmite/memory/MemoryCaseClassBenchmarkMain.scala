@@ -47,7 +47,7 @@ object MemoryCaseClassBenchmarkMain extends App {
   @data class FooMeta(i: Int, b: Boolean, s: String)
 
   val generator =
-    Gen.listOfN(500000, arbitrary[(Int, Boolean, String @@ MeduimString)])
+    Gen.listOfN(500000, arbitrary[(Int, Boolean, String @@ MediumString)])
 
   def generateData =
     generator(Gen.Parameters.default, Seed(0xBABE1)).getOrElse(List.empty)

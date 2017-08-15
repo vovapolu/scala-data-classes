@@ -66,6 +66,6 @@ class ApplyBenchmark {
     m.data.map { case (a, b) => FooMetaMemoised(a, b) }
 
   @Benchmark
-  def memoisedWeak(m: MemoisedData): IndexedSeq[weakmemoised.Foo] =
+  def memoisedWeakSpec(m: MemoisedData): IndexedSeq[weakmemoised.Foo] =
     m.data.map { case (a, b) => weakmemoised.Foo(a, b) }
 }

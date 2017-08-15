@@ -23,6 +23,13 @@ class FooMetaMemoised(a: Boolean, s: String)
 @data(
   memoise = true,
   memoiseRefs = Seq('s),
+  memoiseStrong = true
+)
+class FooMetaInternMemoised(a: Boolean, s: String)
+
+@data(
+  memoise = true,
+  memoiseRefs = Seq('s),
   memoiseHashCode = true,
   memoiseToString = true
 )

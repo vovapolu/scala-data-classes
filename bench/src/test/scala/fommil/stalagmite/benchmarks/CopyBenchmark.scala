@@ -124,10 +124,10 @@ class CopyBenchmark {
     }
 
   @Benchmark
-  def memoisedWeak(
+  def memoisedWeakSpec(
     m: MemoisedData
   ): Seq[(weakmemoised.Foo, weakmemoised.Foo)] =
-    mapWithSomeValue(m.foosWeak)(
+    mapWithSomeValue(m.foosWeakSpec)(
       (false, 0.toChar),
       (t: (Boolean, Char)) => (!t._1, (t._2 + 1).toChar)
     ) {

@@ -56,7 +56,7 @@ object TestUtils {
   }
 
   trait SmallString
-  trait MeduimString
+  trait MediumString
   trait LargeString
 
   implicit lazy val arbSmallString: Arbitrary[String @@ SmallString] =
@@ -65,16 +65,16 @@ object TestUtils {
         .listOfN(2, Gen.alphaNumChar)
         .map(l => tag[SmallString][String](l.mkString))
     )
-  implicit lazy val arbMediumString: Arbitrary[String @@ MeduimString] =
+  implicit lazy val arbMediumString: Arbitrary[String @@ MediumString] =
     Arbitrary(
       Gen
         .listOfN(10, Gen.alphaNumChar)
-        .map(l => tag[MeduimString][String](l.mkString))
+        .map(l => tag[MediumString][String](l.mkString))
     )
   implicit lazy val arbLargeString: Arbitrary[String @@ LargeString] =
     Arbitrary(
       Gen
-        .listOfN(30, Gen.alphaNumChar)
+        .listOfN(50, Gen.alphaNumChar)
         .map(l => tag[LargeString][String](l.mkString))
     )
 
@@ -83,7 +83,7 @@ object TestUtils {
                                         duplicatesCount: Int): Gen[Vector[T]] =
     for {
       data          <- Gen.listOfN(genCount, gen).map(_.toVector)
-      duplicateIdxs <- Gen.listOfN(duplicatesCount, Gen.choose(0, genCount))
+      duplicateIdxs <- Gen.listOfN(duplicatesCount, Gen.choose(0, genCount - 1))
     } yield {
       data ++ duplicateIdxs.map(data)
     }

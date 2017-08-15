@@ -61,5 +61,5 @@ class ToStringBenchmark {
 
   @Benchmark
   def memoisedWeak(m: MemoisedData): IndexedSeq[String] =
-    m.foosWeak.map(_.toString)
+    m.foosWeakSpec.map(_.toString)
 }

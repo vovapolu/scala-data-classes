@@ -61,6 +61,6 @@ class HashCodeBenchmark {
     m.foosMeta.map(_.hashCode)
 
   @Benchmark
-  def memoisedWeak(m: MemoisedData): IndexedSeq[Int] =
-    m.foosWeak.map(_.hashCode)
+  def memoisedWeakSpec(m: MemoisedData): IndexedSeq[Int] =
+    m.foosWeakSpec.map(_.hashCode)
 }
