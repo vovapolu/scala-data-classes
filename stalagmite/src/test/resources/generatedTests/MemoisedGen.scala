@@ -50,7 +50,7 @@ class A[T](i: Int, t: T, b: Boolean)
           if (got != null) {
             got
           } else {
-            val created = new Foo(i, t_memoised, b, key)
+            val created = new A(i, t_memoised, b, key)
             val safe = created.synchronized(created)
             memoised_cache.put(key, new java.lang.ref.WeakReference(created))
             safe

@@ -158,6 +158,7 @@ object MemoisationStats {
 
     override val statsTag: DataStats.StatsTag = DataStats.ApplyStats
 
+    @SuppressWarnings(Array("org.wartremover.warts.Null"))
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
       val memoisedParams = produceMemoisedParams(
         dataInfo,
@@ -200,7 +201,9 @@ object MemoisationStats {
               if (got != null) {
                 got
               } else {
-                val created = new Foo(..${argsWithMemoised :+ Term.Name("key")})
+                val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
+                    ..${argsWithMemoised :+ Term.Name("key")}
+                  )
                 val safe = created.synchronized(created)
                 memoised_cache.put(key, new java.lang.ref.WeakReference(created))
                 safe
@@ -217,6 +220,7 @@ object MemoisationStats {
         q"def intern: ${dataInfo.dataType} = ${dataInfo.dataCreating}"
       )
 
+    @SuppressWarnings(Array("org.wartremover.warts.Null"))
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
       val dataWildCardType = if (dataInfo.typeParams.nonEmpty) {
         t"""${Type.Name(dataInfo.name.value)}
