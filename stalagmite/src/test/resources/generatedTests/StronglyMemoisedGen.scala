@@ -21,16 +21,16 @@ class A[T](i: Int, t: T, b: Boolean)
     import _root_.scala._
     import _root_.scala.Predef._
 
+    def unapply[T](that: A[T]): Option[(Int, T, Boolean)] = Some((that.i, that.t, that.b))
+
+    override def toString: String = "A"
+
     def apply[T](i: Int, t: T, b: Boolean): A[T] = {
       val t_memoised = memoisedRef_cache.intern(t).asInstanceOf[T]
       val created = new A(i, t_memoised, b)
       val safe = created.synchronized(created)
       memoised_cache.intern(new AWithValueEquality[T](safe)).d
     }
-
-    def unapply[T](that: A[T]): Option[(Int, T, Boolean)] = Some((that.i, that.t, that.b))
-
-    override def toString: String = "A"
 
     private class AWithValueEquality[T](val d: A[T]) {
       override def toString: String = d.toString

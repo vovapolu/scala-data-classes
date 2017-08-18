@@ -117,7 +117,11 @@ final case class DataMods(product: Boolean = false,
                           optimiseHeapOptions: Boolean = false,
                           optimiseHeapBooleans: Boolean = false,
                           optimiseHeapStrings: Boolean = false,
-                          memoiseRefs: Seq[String] = Seq())
+                          memoiseRefs: Seq[String] = Seq()) {
+
+  val strongMemoisation: Boolean = memoise && memoiseStrong
+  val weakMemoisation: Boolean   = memoise && !memoiseStrong
+}
 
 final case class DataInfo(name: Type.Name,
                           classParams: Seq[Term.Param],

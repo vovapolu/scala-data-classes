@@ -11,8 +11,9 @@ import scala.meta._
 object CaseClassStats {
 
   object DataApplyStats extends DataStats {
-    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
-      val params = dataInfo.classParams.zip(dataInfo.classParamsTypes).map {
+
+    def applyParams(dataInfo: DataInfo): Seq[Term.Param] =
+      dataInfo.classParams.zip(dataInfo.classParamsTypes).map {
         case (param, tpe) =>
           param.default match {
             case Some(defaultVal) =>
@@ -22,35 +23,19 @@ object CaseClassStats {
           }
       }
 
-      val (initStats, ctorArgs, finishStats) =
-        if (dataInfo.dataMods.memoise) {
-          MemoisationStats.specialApplyPart(dataInfo)
-        } else {
-          (Seq(),
-           dataInfo.classParamNames,
-           Seq(q"created.synchronized(created)"))
-        }
+    override val statsTag: DataStats.StatsTag = DataStats.ApplyStats
 
-      val (packStats, packedArgs) = if (dataInfo.requiredToPack) {
-        HeapOptimizationStats.specialApplyPart(dataInfo, ctorArgs)
-      } else {
-        (Seq(), ctorArgs)
-      }
-
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
       Seq(
         q"""def apply[..${dataInfo.simpleTypeParams}](
-            ..$params
+            ..${applyParams(dataInfo)}
           ): ${dataInfo.dataType} = {
-          ..$initStats
-          ..$packStats
-          ..${Seq(q"""val created =
-               new ${Ctor.Ref.Name(dataInfo.name.value)}(..$packedArgs)""")}
-          ..$finishStats
+          val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
+            ..${dataInfo.classParamNames}
+            )
+          created.synchronized(created)
         }"""
-        // probably a bug in the parser:
-        // single expression between list expansion (..$list) can't be parsed
       )
-    }
   }
 
   object DataUnapplyStats extends DataStats {
@@ -76,6 +61,9 @@ object CaseClassStats {
   }
 
   object DataGettersStats extends DataStats {
+
+    override val statsTag: DataStats.StatsTag = DataStats.GettersStats
+
     override def classStats(dataInfo: DataInfo): Seq[Stat] =
       dataInfo.classParamsWithTypes.map {
         case (param, tpe) =>
@@ -100,7 +88,7 @@ object CaseClassStats {
         q"(this eq that) || ($eqsWithAnds)"
       }
 
-      if (dataInfo.dataMods.memoiseStrong) {
+      if (dataInfo.dataMods.memoise) {
         Seq()
       } else {
         Seq(

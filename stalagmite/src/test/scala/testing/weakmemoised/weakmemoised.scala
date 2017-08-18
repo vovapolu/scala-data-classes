@@ -27,15 +27,6 @@ final class Foo private (
 
   override val toString: String = s"Foo($a,$s)"
   override val hashCode: Int    = a.hashCode + 13 * s.hashCode
-  override def equals(o: Any): Boolean = o match {
-    //case null                      => false
-    case that: Foo if this eq that => true // because of memoisation!
-
-    // can't seem to get guarantees out of the JVM, so need a fallback check
-    // case that: Foo if hashCode == that.hashCode => a == that.a && s == that.s
-
-    case _ => false
-  }
 
   @throws[java.io.IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {

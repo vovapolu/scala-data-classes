@@ -52,13 +52,18 @@ object DataImpl {
     }
   }
 
-  def validateDataInfo(dataInfo: DataInfo) =
+  def validateDataInfo(dataInfo: DataInfo) = {
     for {
       ref <- dataInfo.dataMods.memoiseRefs
     } {
       if (!dataInfo.classParamNames.map(_.value).contains(ref))
         abort(s"""There's no field called $ref""")
     }
+
+    if (dataInfo.requiredToPack && dataInfo.dataMods.memoise) {
+      abort("Heap optimization and memoisation cannot by applied together")
+    }
+  }
 
   def buildClass(dataInfo: DataInfo, builders: Seq[DataStats]): Stat = {
     val actualFields = if (dataInfo.requiredToPack) {
@@ -69,7 +74,13 @@ object DataImpl {
     val ctorParams = actualFields.map {
       case (param, tpe) => param"""private[this] var
                ${Term.Name("_" + param.value)}: $tpe"""
-    }
+    } ++ (if (dataInfo.dataMods.weakMemoisation) {
+            Seq(
+              param"private val _key: ${MemoisationStatsHelper.keyType(dataInfo)}"
+            )
+          } else {
+            Seq.empty
+          })
 
     val modsToClasses: Seq[(DataInfo => Boolean, Ctor.Call)] = Seq(
       ((di: DataInfo) => di.dataMods.product) ->
@@ -118,6 +129,27 @@ object DataImpl {
     }"""
   }
 
+  def composeBuilderByTags(builders: Seq[DataStats]): Seq[DataStats] = {
+
+    // keep only first builder for each tag
+    def filterBuilders(unfilteredBuilders: Seq[DataStats],
+                       usedTags: Set[DataStats.StatsTag]): Seq[DataStats] =
+      unfilteredBuilders match {
+        case head +: tail =>
+          head.statsTag match {
+            case DataStats.NoOverride =>
+              head +: filterBuilders(tail, usedTags)
+            case tag if !usedTags.contains(tag) =>
+              head +: filterBuilders(tail, usedTags + tag)
+            case _ =>
+              filterBuilders(tail, usedTags)
+          }
+        case _ => Seq.empty
+      }
+
+    filterBuilders(builders.reverse, Set.empty).reverse
+  }
+
   def expand(clazz: Defn.Class, dataMods: DataMods): Term.Block =
     clazz match {
       case cls @ Defn.Class(Seq(), name, tparams, ctor, tmpl) =>
@@ -144,10 +176,17 @@ object DataImpl {
             DataShapelessTypeableStats,
             DataShapelessGenericsStats
           ),
-          ((di: DataInfo) => di.dataMods.memoise) -> Seq(
-            DataMemoiseStats
+          ((di: DataInfo) => di.dataMods.strongMemoisation) -> Seq(
+            DataStrongMemoiseApplyStats,
+            DataStrongMemoiseStats
+          ),
+          ((di: DataInfo) => di.dataMods.weakMemoisation) -> Seq(
+            DataWeakMemoiseApplyStats,
+            DataWeakMemoiseStats
           ),
           ((di: DataInfo) => di.requiredToPack) -> Seq(
+            UnpackGettersStats,
+            DataHeapOptimizeApplyStats,
             PackStats
           )
         )
@@ -155,7 +194,7 @@ object DataImpl {
         val builders = Seq(
           DataApplyStats,
           DataUnapplyStats,
-          if (dataInfo.requiredToPack) UnpackGettersStats else DataGettersStats,
+          DataGettersStats,
           DataEqualsStats,
           DataHashCodeStats,
           DataToStringStats,
@@ -164,8 +203,8 @@ object DataImpl {
           case (dataInfoP, bs) if dataInfoP(dataInfo) => bs
         }.flatten.toList
 
-        val newClass  = buildClass(dataInfo, builders)
-        val newObject = buildObject(dataInfo, builders)
+        val newClass  = buildClass(dataInfo, composeBuilderByTags(builders))
+        val newObject = buildObject(dataInfo, composeBuilderByTags(builders))
         //println((newClass, newObject).toString())
 
         Term.Block(

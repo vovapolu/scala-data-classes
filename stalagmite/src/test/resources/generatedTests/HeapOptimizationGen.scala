@@ -1,4 +1,4 @@
-//optimiseHeapOptions optimiseHeapBooleans optimiseHeapStrings memoise serializable shapeless
+//optimiseHeapOptions optimiseHeapBooleans optimiseHeapStrings serializable shapeless
 //memoiseRefs s
 class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int])
 //---
@@ -7,29 +7,6 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
     import _root_.scala._
     import _root_.scala.Predef._
 
-    def a: Option[Boolean] = if ((_bitmask & 1 << 0) != 0) {
-      None
-    } else {
-      Some((_bitmask & 1 << 1) != 0)
-    }
-
-    def b: Option[Boolean] = if ((_bitmask & 1 << 2) != 0) {
-      None
-    } else {
-      Some((_bitmask & 1 << 3) != 0)
-    }
-
-    def s: Option[String] = if (this._s == null) {
-      None
-    } else {
-      Some(new String(this._s))
-    }
-
-    def i: Option[Int] = if ((_bitmask & 1 << 4) != 0) {
-      None
-    } else {
-      Some(this._i)
-    }
     override def equals(thatAny: Any): Boolean = thatAny match {
       case that: Foo =>
         (this eq that) || this.a == that.a && this.b == that.b && this.s == that.s && this.i == that.i
@@ -63,20 +40,37 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
       _bitmask = packed._3
     }
 
-    @throws[_root_.java.io.ObjectStreamException] private[this] def readResolve(): Any = Foo(a, b, s, i)
-    def intern: Foo = Foo(a, b, s, i)
+    @throws[_root_.java.io.ObjectStreamException]
+    private[this] def readResolve(): Any = Foo(a, b, s, i)
+
+    def a: Option[Boolean] = if ((_bitmask & 1 << 0) != 0) {
+      None
+    } else {
+      Some((_bitmask & 1 << 1) != 0)
+    }
+
+    def b: Option[Boolean] = if ((_bitmask & 1 << 2) != 0) {
+      None
+    } else {
+      Some((_bitmask & 1 << 3) != 0)
+    }
+
+    def s: Option[String] = if (this._s == null) {
+      None
+    } else {
+      Some(new String(this._s))
+    }
+
+    def i: Option[Int] = if ((_bitmask & 1 << 4) != 0) {
+      None
+    } else {
+      Some(this._i)
+    }
   }
+
   object Foo extends _root_.scala.Serializable {
     import _root_.scala._
     import _root_.scala.Predef._
-
-    def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int]): Foo = {
-      val s_memoised = memoisedRef_cache.intern(s).asInstanceOf[Option[String]]
-      val packed = pack(a, b, s_memoised, i)
-      val created = new Foo(packed._1, packed._2, packed._3)
-      val safe = created.synchronized(created)
-      memoised_cache.intern(safe)
-    }
 
     def unapply(that: Foo): Option[(Option[Boolean], Option[Boolean], Option[String], Option[Int])] = Some((that.a, that.b, that.s, that.i))
 
@@ -130,8 +124,11 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
       override def from(r: Repr): Foo = GenericFoo.from(r)
     }
 
-    private[this] val memoised_cache = _root_.com.google.common.collect.Interners.newWeakInterner[Foo]()
-    private[this] val memoisedRef_cache = _root_.com.google.common.collect.Interners.newWeakInterner[AnyRef]()
+    def apply(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int]): Foo = {
+      val packed = pack(a, b, s, i)
+      val created = new Foo(packed._1, packed._2, packed._3)
+      created.synchronized(created)
+    }
 
     private def pack(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int]): (Array[Byte], Int, Long) = {
       var _bitmask: Long = 0L

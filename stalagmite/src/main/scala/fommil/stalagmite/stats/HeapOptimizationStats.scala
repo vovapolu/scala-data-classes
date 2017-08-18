@@ -10,15 +10,31 @@ import scala.meta._
 
 object HeapOptimizationStats {
 
-  /**
-   * @param args Constructor arguments before packing
-   * @return Packing stats, new packed arguments
-   */
-  def specialApplyPart(dataInfo: DataInfo,
-                       args: Seq[Term]): (Seq[Stat], Seq[Term]) =
-    (Seq(q"val packed = pack(..$args)"),
-     dataInfo.optimizedParams.indices
-       .map(ind => q"packed.${Term.Name(s"_${ind + 1}")}"))
+  object DataHeapOptimizeApplyStats extends DataStats {
+    import CaseClassStats.DataApplyStats
+
+    override val statsTag: DataStats.StatsTag = DataStats.ApplyStats
+
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
+      val packedArgs = dataInfo.optimizedParams match {
+        case Seq(param1) => Seq(q"packed")
+        case params =>
+          params.indices.map(ind => q"packed.${Term.Name(s"_${ind + 1}")}")
+      }
+
+      Seq(
+        q"""def apply[..${dataInfo.simpleTypeParams}](
+            ..${DataApplyStats.applyParams(dataInfo)}
+          ): ${dataInfo.dataType} = {
+          val packed = pack(..${dataInfo.classParamNames})
+          val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
+            ..$packedArgs
+            )
+          created.synchronized(created)
+        }"""
+      )
+    }
+  }
 
   /**
    * Special logic for `readObject` method for packing case
@@ -43,6 +59,9 @@ object HeapOptimizationStats {
   }
 
   object UnpackGettersStats extends DataStats {
+
+    override val statsTag: DataStats.StatsTag = DataStats.GettersStats
+
     override def classStats(dataInfo: DataInfo): Seq[Stat] =
       dataInfo.classParamsWithTypes.zip(dataInfo.bitPositions).map {
         case ((param, tpe), bitPos) =>
