@@ -157,9 +157,9 @@ object MemoryMemoisedBenchmarkMain extends App {
   class FooMetaWithRefs(b: Boolean, s: String)
 
   val repeatingGenerator =
-    Gen.listOfN(1000, arbitrary[(Boolean, String @@ SmallString)])
+    Gen.listOfN(100000, arbitrary[(Boolean, String @@ SmallString)])
   val distinctGenerator =
-    Gen.listOfN(1000, arbitrary[(Boolean, String @@ MediumString)])
+    Gen.listOfN(100000, arbitrary[(Boolean, String @@ MediumString)])
 
   def generateRepeatingData =
     repeatingGenerator.sample.getOrElse(List())
