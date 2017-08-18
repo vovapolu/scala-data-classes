@@ -23,5 +23,5 @@ pipeline:
 
 matrix:
   SCALA_VERSION:
-    - 2.12.2
+    - 2.12.3
     - 2.11.11
