@@ -5,19 +5,6 @@ import org.openjdk.jmh.annotations.Benchmark
 class EqualsVectorBenchmark {
   import BenchmarkData._
 
-  // jmh:run -i 15 -wi 15 -f1 -t10 .*EqualsBenchmark
-  // Benchmark                               Mode  Cnt   Score   Error  Units
-  // EqualsBenchmark.caseClass              thrpt   15  5.829 ± 1.012  ops/s
-  // EqualsBenchmark.caseClassMeta          thrpt   15  6.294 ± 1.061  ops/s
-  // EqualsBenchmark.caseClassSpec          thrpt   15  5.844 ± 1.196  ops/s
-  // EqualsBenchmark.memoisedCaseClass      thrpt   15  5.161 ± 1.050  ops/s
-  // EqualsBenchmark.memoisedMeta           thrpt   15  5.830 ± 1.491  ops/s
-  // EqualsBenchmark.memoisedSpec           thrpt   15  6.815 ± 1.220  ops/s
-  // EqualsBenchmark.memoisedWeak           thrpt   15  6.387 ± 1.020  ops/s
-  // EqualsBenchmark.optimizeHeapCaseClass  thrpt   15  6.052 ± 0.718  ops/s
-  // EqualsBenchmark.optimizeHeapMeta       thrpt   15  4.744 ± 0.327  ops/s
-  // EqualsBenchmark.optimizeHeapSpec       thrpt   15  4.344 ± 0.193  ops/s
-
   // case class
 
   @Benchmark

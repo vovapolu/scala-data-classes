@@ -14,9 +14,16 @@ import scala.reflect.ClassTag
 object TestUtils {
 
   def measureMemoryConsumption[T](
+    warmUpRepeats: Int = 1,
     repeats: Int = 5
   )(u: => T): Seq[(Long, Long)] = {
     val rt = Runtime.getRuntime
+    GcFinalization.awaitFullGc()
+    val tmp = for (i <- 1 to warmUpRepeats) yield {
+      GcFinalization.awaitFullGc()
+      val t = u
+      t
+    }
     GcFinalization.awaitFullGc()
     val initialMemory = rt.totalMemory - rt.freeMemory
     for (i <- 1 to repeats)
@@ -37,8 +44,8 @@ object TestUtils {
     memoryMeasurements.zipWithIndex.foreach {
       case ((consumedMemory, totalMemory), i) =>
         println(
-          s"Iteration $i: consumed ${consumedMemory / 1024} kb, " +
-            s"totally ${totalMemory / 1024} kb"
+          s"| $i | ${consumedMemory / 1024} kb " +
+            s"| ${totalMemory / 1024} kb |"
         )
     }
 

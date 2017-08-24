@@ -11,34 +11,9 @@ import Arbitrary.arbitrary
 import org.scalacheck.rng.Seed
 import shapeless.tag.@@
 
-// CAUTION: Don't run there benchmarks with `sbt "runMain ..."`
-// GC in SBT may behave in really strange way,
-// which results to large std error during memory usage measurements
-// It's recommended to run memory benchmarks as standalone applications (using Idea or console)
+// CAUTION: It's recommended to run memory benchmarks in separate process
 
 object MemoryCaseClassBenchmarkMain extends App {
-
-  //  Case class
-  //    Iteration 1: consumed 89349 kb, totally 86719 kb ??? it's reproducible
-  //    Iteration 2: consumed 89892 kb, totally 94064 kb ???
-  //    Iteration 3: consumed 83816 kb, totally 95668 kb
-  //    Iteration 4: consumed 81859 kb, totally 94866 kb
-  //    Iteration 5: consumed 82235 kb, totally 94645 kb
-  //
-  //  Case class:
-  //    mean - 85430 kb
-  //    std  - 7799.87 kb
-  //
-  //  Data class
-  //    Iteration 1: consumed 82441 kb, totally 82454 kb
-  //    Iteration 2: consumed 82396 kb, totally 82065 kb
-  //    Iteration 3: consumed 82345 kb, totally 82117 kb
-  //    Iteration 4: consumed 82447 kb, totally 81903 kb
-  //    Iteration 5: consumed 82405 kb, totally 81995 kb
-  //
-  //  Data class:
-  //    mean - 82407 kb
-  //    std  - 81.91 kb
 
   println("Running MemoryCaseClassBenchmark")
 

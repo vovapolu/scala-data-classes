@@ -205,7 +205,8 @@ object MemoisationStats {
                     ..${argsWithMemoised :+ Term.Name("key")}
                   )
                 val safe = created.synchronized(created)
-                memoised_cache.put(key, new java.lang.ref.WeakReference(created))
+                memoised_cache.put(key, new _root_.java.lang.ref
+                  .WeakReference(created))
                 safe
               }
             }
@@ -215,11 +216,6 @@ object MemoisationStats {
   }
 
   object DataWeakMemoiseStats extends DataStats {
-    override def classStats(dataInfo: DataInfo): Seq[Stat] =
-      Seq(
-        q"def intern: ${dataInfo.dataType} = ${dataInfo.dataCreating}"
-      )
-
     @SuppressWarnings(Array("org.wartremover.warts.Null"))
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
       val dataWildCardType = if (dataInfo.typeParams.nonEmpty) {
@@ -232,9 +228,9 @@ object MemoisationStats {
       val memoisedCache =
         q"""
              private[this] val memoised_cache =
-              new java.util.WeakHashMap[
+              new _root_.java.util.WeakHashMap[
                  ${MemoisationStatsHelper.keyType(dataInfo)},
-                 java.lang.ref.WeakReference[$dataWildCardType]
+                 _root_.java.lang.ref.WeakReference[$dataWildCardType]
                ]
             """
 
@@ -261,8 +257,8 @@ object MemoisationStats {
                    }
                    if (got != null) got
                    else {
-                     memoisedRef_cache.put(ref, new java.lang.ref
-                     .WeakReference(ref))
+                     memoisedRef_cache.put(ref, new _root_.java.lang.ref
+                      .WeakReference(ref))
                      ref
                    }
                  }

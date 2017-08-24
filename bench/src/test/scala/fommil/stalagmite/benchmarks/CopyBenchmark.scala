@@ -8,19 +8,6 @@ import testing.{ caseclass, memoised, optimiseheap, weakmemoised }
 class CopyBenchmark {
   import BenchmarkData._
 
-  // jmh:run -i 15 -wi 15 -f1 -t10 .*CopyBenchmark
-  // Benchmark                             Mode  Cnt    Score    Error  Units
-  // CopyBenchmark.caseClass              thrpt   15  1152.476 ± 265.676  ops/s
-  // CopyBenchmark.caseClassMeta          thrpt   15  1369.821 ±  58.396  ops/s
-  // CopyBenchmark.caseClassSpec          thrpt   15  1337.117 ±  89.784  ops/s
-  // CopyBenchmark.memoisedCaseClass      thrpt   15  2068.914 ±  49.027  ops/s
-  // CopyBenchmark.memoisedMeta           thrpt   15   286.288 ±  24.972  ops/s
-  // CopyBenchmark.memoisedSpec           thrpt   15   238.403 ±   3.862  ops/s
-  // CopyBenchmark.memoisedWeak           thrpt   15   437.004 ±  48.137  ops/s
-  // CopyBenchmark.optimizeHeapCaseClass  thrpt   15  2024.686 ±  47.056  ops/s
-  // CopyBenchmark.optimizeHeapMeta       thrpt   15   426.857 ±  37.586  ops/s
-  // CopyBenchmark.optimizeHeapSpec       thrpt   15   400.083 ±  23.108  ops/s
-
   // case class
 
   def mapWithSomeValue[T, S, V](
