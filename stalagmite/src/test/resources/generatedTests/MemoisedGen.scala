@@ -1,4 +1,4 @@
-//memoise
+//memoise memoiseEqualsByValue
 //memoiseRefs t
 class A[T](i: Int, t: T, b: Boolean)
 //---
@@ -11,6 +11,13 @@ class A[T](i: Int, t: T, b: Boolean)
     def i: Int = this._i
     def t: T = this._t
     def b: Boolean = this._b
+
+    override def equals(thatAny: Any): Boolean = (thatAny match {
+      case that: A[_] =>
+        (this eq that) || (this.i == that.i && this.t == that.t && this.b == that.b)
+      case _ =>
+        false
+    })
 
     override def hashCode: Int = i.hashCode + 13 * (t.hashCode + 13 * b.hashCode)
     override def toString: String = "A(" + (i.toString + "," + t.toString + "," + b.toString) + ")"

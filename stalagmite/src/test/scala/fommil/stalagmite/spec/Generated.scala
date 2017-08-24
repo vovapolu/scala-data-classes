@@ -84,6 +84,11 @@ class Generated extends FlatSpec with ParallelTestExecution {
     checkGenFile("StronglyMemoisedGen")
   }
 
+  "@data-generated class with lazy chaching of .hashCode and .toString" should
+    "have lazy modifiers" in {
+    checkGenFile("MemoisedLazyGen")
+  }
+
   "@data-generated class with heap optimization" should
     "have pack method and needed logic in apply, readObject and getters" in {
     checkGenFile("HeapOptimizationGen")

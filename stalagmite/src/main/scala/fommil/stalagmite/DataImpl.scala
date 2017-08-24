@@ -223,11 +223,16 @@ class data(product: Boolean = false,
            companionExtends: Boolean = false,
            serializable: Boolean = true,
            shapeless: Boolean = true,
+           // memoise mods
            memoise: Boolean = false,
-           memoiseHashCode: Boolean = false,
-           memoiseToString: Boolean = false,
            memoiseStrong: Boolean = false,
+           memoiseEqualsByValue: Boolean = false,
+           memoiseHashCode: Boolean = false,
+           memoiseHashCodeLazy: Boolean = false,
+           memoiseToString: Boolean = false,
+           memoiseToStringLazy: Boolean = false,
            memoiseRefs: scala.Seq[scala.Symbol] = scala.Seq(),
+           // optimize heap mods
            optimiseHeapOptions: Boolean = false,
            optimiseHeapBooleans: Boolean = false,
            optimiseHeapStrings: Boolean = false)

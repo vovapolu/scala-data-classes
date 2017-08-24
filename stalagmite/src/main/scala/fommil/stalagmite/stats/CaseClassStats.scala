@@ -88,7 +88,8 @@ object CaseClassStats {
         q"(this eq that) || ($eqsWithAnds)"
       }
 
-      if (dataInfo.dataMods.memoise) {
+      if (dataInfo.dataMods.memoise &&
+          !dataInfo.dataMods.memoiseEqualsByValue) {
         Seq()
       } else {
         Seq(
@@ -140,7 +141,9 @@ object CaseClassStats {
       }
 
       Seq(
-        if (dataInfo.dataMods.memoiseHashCode) {
+        if (dataInfo.dataMods.memoiseHashCodeLazy) {
+          q"override lazy val hashCode: Int = $hashCodeExpr"
+        } else if (dataInfo.dataMods.memoiseHashCode) {
           q"override val hashCode: Int = $hashCodeExpr"
         } else {
           q"override def hashCode: Int = $hashCodeExpr"
@@ -169,7 +172,9 @@ object CaseClassStats {
            $paramsToString + ${Lit.String(")")}"""
 
       Seq(
-        if (dataInfo.dataMods.memoiseToString) {
+        if (dataInfo.dataMods.memoiseToStringLazy) {
+          q"override lazy val toString: String = $toStringBody"
+        } else if (dataInfo.dataMods.memoiseToString) {
           q"override val toString: String = $toStringBody"
         } else {
           q"override def toString: String = $toStringBody"
