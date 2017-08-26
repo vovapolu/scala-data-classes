@@ -1,5 +1,4 @@
 //optimiseHeapOptions optimiseHeapBooleans optimiseHeapStrings serializable shapeless
-//memoiseRefs s
 class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int])
 //---
 {
