@@ -174,15 +174,9 @@ object DataImpl {
           ((di: DataInfo) => di.dataMods.product) -> Seq(
             DataProductMethodsStats
           ),
-          ((di: DataInfo) => di.dataMods.serializable && di.requiresToHaveVars)
-          // .requiredToHaveVars is stronger than .serializable,
-          // but property of having vars instead of vals
-          // isn't connected to serialization in general
-            -> Seq(
-              DataWriteObjectStats,
-              DataReadObjectStats
-            ),
           ((di: DataInfo) => di.dataMods.serializable) -> Seq(
+            DataWriteObjectStats,
+            DataReadObjectStats,
             DataReadResolveStats
           ),
           ((di: DataInfo) => di.dataMods.shapeless) -> Seq(

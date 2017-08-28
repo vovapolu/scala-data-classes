@@ -54,6 +54,11 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
 
     override def toString: String = "A"
 
+    @throws[_root_.java.io.IOException]
+    private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
+    @throws[_root_.java.io.IOException]
+    @throws[_root_.java.lang.ClassNotFoundException]
+    private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A
 
