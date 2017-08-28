@@ -108,7 +108,7 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
       override def describe: String = "Foo[" + (T2.describe + "," + T2.describe + "," + T0.describe + "," + T1.describe) + "]"
     }
 
-    implicit def GenericFoo: Generic.Aux[Foo, Option[Boolean] :: Option[Boolean] :: Option[String] :: Option[Int] :: HNil] = new Generic[Foo] {
+    implicit val GenericFoo: Generic.Aux[Foo, Option[Boolean] :: Option[Boolean] :: Option[String] :: Option[Int] :: HNil] = new Generic[Foo] {
       override type Repr = Option[Boolean] :: Option[Boolean] :: Option[String] :: Option[Int] :: HNil
       override def to(f: Foo): Repr = LabelledGenericFoo.to(f)
       override def from(r: Repr): Foo = r match {
@@ -117,7 +117,7 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
       }
     }
 
-    implicit def LabelledGenericFoo: LabelledGeneric.Aux[Foo, FieldType[a_tpe.type, Option[Boolean]] :: FieldType[b_tpe.type, Option[Boolean]] :: FieldType[s_tpe.type, Option[String]] :: FieldType[i_tpe.type, Option[Int]] :: HNil] = new LabelledGeneric[Foo] {
+    implicit val LabelledGenericFoo: LabelledGeneric.Aux[Foo, FieldType[a_tpe.type, Option[Boolean]] :: FieldType[b_tpe.type, Option[Boolean]] :: FieldType[s_tpe.type, Option[String]] :: FieldType[i_tpe.type, Option[Int]] :: HNil] = new LabelledGeneric[Foo] {
       override type Repr = FieldType[a_tpe.type, Option[Boolean]] :: FieldType[b_tpe.type, Option[Boolean]] :: FieldType[s_tpe.type, Option[String]] :: FieldType[i_tpe.type, Option[Int]] :: HNil
       override def to(f: Foo): Repr = field[a_tpe.type](f.a) :: field[b_tpe.type](f.b) :: field[s_tpe.type](f.s) :: field[i_tpe.type](f.i) :: HNil
       override def from(r: Repr): Foo = GenericFoo.from(r)
