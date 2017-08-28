@@ -2,8 +2,7 @@
 // License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite.stats
 
-import fommil.stalagmite.DataInfo
-import fommil.stalagmite.DataStats
+import fommil.stalagmite.{ DataInfo, DataStats, MetaUtils }
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -25,7 +24,12 @@ object CaseClassStats {
 
     override val statsTag: DataStats.StatsTag = DataStats.ApplyStats
 
-    override def objectStats(dataInfo: DataInfo): Seq[Stat] =
+    override def objectStats(dataInfo: DataInfo): Seq[Stat] = {
+      val publishing = if (dataInfo.requiresToHaveVars) {
+        q"created.synchronized(created)"
+      } else {
+        q"created"
+      }
       Seq(
         q"""def apply[..${dataInfo.simpleTypeParams}](
             ..${applyParams(dataInfo)}
@@ -33,9 +37,10 @@ object CaseClassStats {
           val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
             ..${dataInfo.classParamNames}
             )
-          created.synchronized(created)
+          $publishing
         }"""
       )
+    }
   }
 
   object DataUnapplyStats extends DataStats {
@@ -142,9 +147,9 @@ object CaseClassStats {
 
       Seq(
         if (dataInfo.dataMods.memoiseHashCodeLazy) {
-          q"override lazy val hashCode: Int = $hashCodeExpr"
+          q"@transient override lazy val hashCode: Int = $hashCodeExpr"
         } else if (dataInfo.dataMods.memoiseHashCode) {
-          q"override val hashCode: Int = $hashCodeExpr"
+          q"@transient override val hashCode: Int = $hashCodeExpr"
         } else {
           q"override def hashCode: Int = $hashCodeExpr"
         }
@@ -173,9 +178,9 @@ object CaseClassStats {
 
       Seq(
         if (dataInfo.dataMods.memoiseToStringLazy) {
-          q"override lazy val toString: String = $toStringBody"
+          q"@transient override lazy val toString: String = $toStringBody"
         } else if (dataInfo.dataMods.memoiseToString) {
-          q"override val toString: String = $toStringBody"
+          q"@transient override val toString: String = $toStringBody"
         } else {
           q"override def toString: String = $toStringBody"
         }
@@ -207,7 +212,7 @@ object CaseClassStats {
 
       val copyParams = dataInfo.classParamsWithTypes.map {
         case (param, tpe) =>
-          param"""$param: ${DataInfo.replaceType(tpe, oldToNewTypes)} =
+          param"""$param: ${MetaUtils.replaceType(tpe, oldToNewTypes)} =
                  this.$param"""
       }
 

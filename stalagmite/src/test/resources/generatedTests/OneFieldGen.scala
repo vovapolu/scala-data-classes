@@ -2,7 +2,7 @@
 class A(one: Int)
 //---
 {
-  final class A private (private[this] var _one: Int) {
+  final class A private (private[this] val _one: Int) {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -27,7 +27,7 @@ class A(one: Int)
 
     def apply(one: Int): A = {
       val created = new A(one)
-      created.synchronized(created)
+      created
     }
 
     def unapply(that: A): Option[Int] = Some(that.one)

@@ -2,7 +2,7 @@
 class A[T](i: Int, b: Boolean, t: T)
 //---
 {
-  final class A[T] private (private[this] var _i: Int, private[this] var _b: Boolean, private[this] var _t: T) {
+  final class A[T] private (private[this] val _i: Int, private[this] val _b: Boolean, private[this] val _t: T) {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -29,7 +29,7 @@ class A[T](i: Int, b: Boolean, t: T)
 
     def apply[T](i: Int, b: Boolean, t: T): A[T] = {
       val created = new A(i, b, t)
-      created.synchronized(created)
+      created
     }
 
     def unapply[T](that: A[T]): Option[(Int, Boolean, T)] = Some((that.i, that.b, that.t))

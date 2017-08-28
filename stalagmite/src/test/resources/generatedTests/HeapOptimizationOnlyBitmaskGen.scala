@@ -2,7 +2,7 @@
 class Foo(a: Option[Boolean], b: Option[Boolean])
 //---
 {
-  final class Foo private (private[this] var _bitmask: Long) {
+  final class Foo private (private[this] val _bitmask: Long) {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -41,7 +41,7 @@ class Foo(a: Option[Boolean], b: Option[Boolean])
     def apply(a: Option[Boolean], b: Option[Boolean]): Foo = {
       val packed = pack(a, b)
       val created = new Foo(packed)
-      created.synchronized(created)
+      created
     }
 
     private def pack(a: Option[Boolean], b: Option[Boolean]): Long = {

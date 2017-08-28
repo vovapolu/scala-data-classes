@@ -3,8 +3,8 @@
 class A[T](i: Int, t: T, b: Boolean)
 //---
 {
-  final class A[T] private (private[this] var _i: Int, private[this] var _t: T, private[this] var _b: Boolean,
-                            private val _key: (Int, AnyRef, Boolean)) {
+  final class A[T] private (private[this] val _i: Int, private[this] val _t: T, private[this] val _b: Boolean,
+                            @transient private val _key: (Int, AnyRef, Boolean)) {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -57,9 +57,8 @@ class A[T](i: Int, t: T, b: Boolean)
             got
           } else {
             val created = new A(i, t_memoised, b, key)
-            val safe = created.synchronized(created)
             memoised_cache.put(key, new _root_.java.lang.ref.WeakReference(created))
-            safe
+            created
           }
         }
       }

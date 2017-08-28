@@ -2,7 +2,7 @@
 class Foo(s: Option[String])
 //---
 {
-  final class Foo private (private[this] var _s: Array[Byte], private[this] var _bitmask: Long) {
+  final class Foo private (private[this] val _s: Array[Byte], private[this] val _bitmask: Long) {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -36,7 +36,7 @@ class Foo(s: Option[String])
     def apply(s: Option[String]): Foo = {
       val packed = pack(s)
       val created = new Foo(packed._1, packed._2)
-      created.synchronized(created)
+      created
     }
 
     private def pack(s: Option[String]): (Array[Byte], Long) = {

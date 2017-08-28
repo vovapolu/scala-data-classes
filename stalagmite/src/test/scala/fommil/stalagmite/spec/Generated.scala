@@ -93,6 +93,6 @@ class Generated extends FlatSpec with ParallelTestExecution {
     "have pack method and needed logic in apply, readObject and getters" in {
     checkGenFile("HeapOptimizationGen")
     checkGenFile("HeapOptimizationNoBitmaskGen")
-    checkGenFile("HeapOptimizationOnlyBitmaskGen", true)
+    checkGenFile("HeapOptimizationOnlyBitmaskGen")
   }
 }

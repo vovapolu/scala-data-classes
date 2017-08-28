@@ -2,8 +2,7 @@
 // License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite.stats
 
-import fommil.stalagmite.DataInfo
-import fommil.stalagmite.DataStats
+import fommil.stalagmite.{ DataInfo, DataStats, MetaUtils }
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -21,6 +20,11 @@ object HeapOptimizationStats {
         case params =>
           params.indices.map(ind => q"packed.${Term.Name(s"_${ind + 1}")}")
       }
+      val publishing = if (dataInfo.requiresToHaveVars) {
+        q"created.synchronized(created)"
+      } else {
+        q"created"
+      }
 
       Seq(
         q"""def apply[..${dataInfo.simpleTypeParams}](
@@ -30,7 +34,7 @@ object HeapOptimizationStats {
           val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
             ..$packedArgs
             )
-          created.synchronized(created)
+          $publishing
         }"""
       )
     }
@@ -149,7 +153,7 @@ object HeapOptimizationStats {
           val fullPack: Term = bitPos.optionBit match {
             case Some(oBit) =>
               val dummyVal = if (needVal) {
-                Seq(DataInfo.dummyValForPrimitive(typeWithoutOption))
+                Seq(MetaUtils.dummyValForPrimitive(typeWithoutOption))
               } else {
                 Seq()
               }

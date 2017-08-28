@@ -2,8 +2,7 @@
 // License: http://www.apache.org/licenses/LICENSE-2.0
 package fommil.stalagmite.stats
 
-import fommil.stalagmite.DataInfo
-import fommil.stalagmite.DataStats
+import fommil.stalagmite.{ DataInfo, DataStats, MetaUtils }
 
 import scala.collection.immutable.Seq
 import scala.meta._
@@ -37,7 +36,7 @@ object MemoisationStats {
     def keyType(dataInfo: DataInfo): Type = {
       val typesWithoutTypeParams = dataInfo.classParamsTypes.map(
         tpe =>
-          DataInfo.replaceType(
+          MetaUtils.replaceType(
             tpe,
             dataInfo.typeParamsNames.map(name => name.value -> t"AnyRef").toMap
         )
@@ -62,29 +61,33 @@ object MemoisationStats {
         (param, tpe) => q"memoisedRef_cache.intern($param).asInstanceOf[$tpe]"
       )
 
-      val interning = {
+      def interning(varName: Term.Name) = {
         val nameWithValueEquality =
           Ctor.Ref.Name(dataInfo.name.value + "WithValueEquality")
         val wrapperCreating = if (dataInfo.typeParams.nonEmpty) {
-          q"new $nameWithValueEquality[..${dataInfo.typeParamsNames}](safe)"
+          q"new $nameWithValueEquality[..${dataInfo.typeParamsNames}]($varName)"
         } else {
-          q"new $nameWithValueEquality(safe)"
+          q"new $nameWithValueEquality($varName)"
         }
         q"memoised_cache.intern($wrapperCreating).d"
       }
 
-      Seq(q"""def apply[..${dataInfo.simpleTypeParams}](
-            ..${DataApplyStats.applyParams(dataInfo)}
+      val publishing = if (dataInfo.requiresToHaveVars) {
+        Seq(q"val safe = created.synchronized(created)", interning(q"safe"))
+      } else {
+        Seq(interning(q"created"))
+      }
+
+      Seq(q"""
+        def apply[..${dataInfo.simpleTypeParams}](
+          ..${DataApplyStats.applyParams(dataInfo)}
           ): ${dataInfo.dataType} = {
-          ..$memoisedParams
-          ..${Seq(
-        q"""val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
-                        ..${argsWithMemoised(dataInfo)})""",
-        q"val safe = created.synchronized(created)"
-      )}
-          $interning
-        }""")
-      // seems like a bug in parser, the Defn.Val can't be placed after ..${Seq[Defn.Val]}
+            ..$memoisedParams
+            ..${Seq(q"""
+              val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
+              ..${argsWithMemoised(dataInfo)})""")}
+            ..$publishing
+            }""")
     }
   }
 
@@ -172,6 +175,12 @@ object MemoisationStats {
         case args      => q"(..$args)"
       }
 
+      val publishing = if (dataInfo.requiresToHaveVars) {
+        Seq(q"val safe = created.synchronized(created)", q"safe")
+      } else {
+        Seq(q"created")
+      }
+
       Seq(q"""
         def apply[..${dataInfo.simpleTypeParams}](
           ..${DataApplyStats.applyParams(dataInfo)}
@@ -204,10 +213,9 @@ object MemoisationStats {
                 val created = new ${Ctor.Ref.Name(dataInfo.name.value)}(
                     ..${argsWithMemoised :+ Term.Name("key")}
                   )
-                val safe = created.synchronized(created)
                 memoised_cache.put(key, new _root_.java.lang.ref
                   .WeakReference(created))
-                safe
+                ..$publishing
               }
             }
           }
