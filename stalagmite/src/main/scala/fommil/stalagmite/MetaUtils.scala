@@ -1,3 +1,5 @@
+// Copyright: 2017 https://github.com/fommil/stalagmite/graphs
+// License: http://www.gnu.org/licenses/lgpl-3.0.en.html
 package fommil.stalagmite
 
 import scala.meta._

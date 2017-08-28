@@ -1,5 +1,5 @@
 // Copyright: 2017 https://github.com/fommil/stalagmite/graphs
-// License: http://www.apache.org/licenses/LICENSE-2.0
+// License: http://www.gnu.org/licenses/lgpl-3.0.en.html
 package fommil.stalagmite.stats
 
 import fommil.stalagmite.{ DataInfo, DataStats, MetaUtils }
