@@ -1,5 +1,5 @@
 // Copyright: 2017 https://github.com/fommil/stalagmite/graphs
-// License: http://www.apache.org/licenses/LICENSE-2.0
+// License: http://www.gnu.org/licenses/lgpl-3.0.en.html
 package fommil.stalagmite
 
 import scala.collection.immutable.Seq
@@ -71,16 +71,24 @@ object DataImpl {
     } else {
       dataInfo.classParamsWithTypes
     }
-    val ctorParams = actualFields.map {
-      case (param, tpe) => param"""private[this] var
-               ${Term.Name("_" + param.value)}: $tpe"""
-    } ++ (if (dataInfo.dataMods.weakMemoisation) {
-            Seq(
-              param"private val _key: ${MemoisationStatsHelper.keyType(dataInfo)}"
-            )
-          } else {
-            Seq.empty
-          })
+
+    def generateField(field: (Term.Name, Type)): Term.Param = {
+      val (param, tpe) = field
+      if (dataInfo.requiresToHaveVars) {
+        param"private[this] var ${Term.Name("_" + param.value)}: $tpe"
+      } else {
+        param"private[this] val ${Term.Name("_" + param.value)}: $tpe"
+      }
+    }
+
+    val ctorParams = actualFields.map(generateField) ++
+      (if (dataInfo.dataMods.weakMemoisation) {
+         Seq(
+           param"@transient private val _key: ${MemoisationStatsHelper.keyType(dataInfo)}"
+         )
+       } else {
+         Seq.empty
+       })
 
     val modsToClasses: Seq[(DataInfo => Boolean, Ctor.Call)] = Seq(
       ((di: DataInfo) => di.dataMods.product) ->

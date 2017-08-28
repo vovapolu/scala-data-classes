@@ -1,5 +1,5 @@
 // Copyright: 2017 https://github.com/fommil/stalagmite/graphs
-// License: http://www.apache.org/licenses/LICENSE-2.0
+// License: http://www.gnu.org/licenses/lgpl-3.0.en.html
 package fommil.stalagmite.stats
 
 import fommil.stalagmite.DataInfo
@@ -32,13 +32,17 @@ object SerializableStats {
               }
           }
       }
-      Seq(q"""
+      if (dataInfo.requiresToHaveVars) {
+        Seq(q"""
           @throws[_root_.java.io.IOException]
           private[this] def writeObject(
             out: java.io.ObjectOutputStream): Unit = {
             ..$writes
           }
         """)
+      } else {
+        Seq()
+      }
     }
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =
@@ -83,14 +87,18 @@ object SerializableStats {
         Seq()
       }
 
-      Seq(q"""
-        @throws[_root_.java.io.IOException]
-        @throws[_root_.java.lang.ClassNotFoundException]
-        private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
-          ..$reads
-          ..$optionalPack
-        }
+      if (dataInfo.requiresToHaveVars) {
+        Seq(q"""
+          @throws[_root_.java.io.IOException]
+          @throws[_root_.java.lang.ClassNotFoundException]
+          private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+            ..$reads
+            ..$optionalPack
+          }
         """)
+      } else {
+        Seq()
+      }
     }
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =

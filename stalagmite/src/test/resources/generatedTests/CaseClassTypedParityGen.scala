@@ -2,7 +2,7 @@
 class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
 //---
 {
-  final class A[X, Y] private (private[this] var _a: Boolean, private[this] var _s: String, private[this] var _xy: Either[X, Option[Y]]) extends _root_.scala.Product with _root_.scala.Serializable {
+  final class A[X, Y] private (private[this] val _a: Boolean, private[this] val _s: String, private[this] val _xy: Either[X, Option[Y]]) extends _root_.scala.Product with _root_.scala.Serializable {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -37,20 +37,6 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
     override def productPrefix: String = "A"
     override def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](this)
 
-    @throws[_root_.java.io.IOException]
-    private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
-      out.writeBoolean(a)
-      out.writeUTF(s)
-      out.writeObject(xy)
-    }
-    @throws[_root_.java.io.IOException]
-    @throws[_root_.java.lang.ClassNotFoundException]
-    private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
-      _a = in.readBoolean()
-      _s = in.readUTF()
-      _xy = in.readObject().asInstanceOf[Either[X, Option[Y]]]
-    }
-
     @throws[_root_.java.io.ObjectStreamException]
     private[this] def readResolve(): Any = A(a, s, xy)
   }
@@ -61,7 +47,7 @@ class A[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]])
 
     def apply[X, Y](a: Boolean, s: String, xy: Either[X, Option[Y]]): A[X, Y] = {
       val created = new A(a, s, xy)
-      created.synchronized(created)
+      created
     }
 
     def unapply[X, Y](that: A[X, Y]): Option[(Boolean, String, Either[X, Option[Y]])] = Some((that.a, that.s, that.xy))

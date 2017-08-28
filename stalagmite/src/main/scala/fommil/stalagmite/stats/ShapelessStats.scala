@@ -1,5 +1,5 @@
 // Copyright: 2017 https://github.com/fommil/stalagmite/graphs
-// License: http://www.apache.org/licenses/LICENSE-2.0
+// License: http://www.gnu.org/licenses/lgpl-3.0.en.html
 package fommil.stalagmite.stats
 
 import fommil.stalagmite.DataInfo
@@ -119,19 +119,27 @@ object ShapelessStats {
              override def describe: String = $describe
            }
           """
+      val typeableTpe = t"Typeable[${dataInfo.dataType}]"
 
       if (implicitTypeables.nonEmpty) {
         Seq(q"""
           implicit def $typeableName[..${dataInfo.simpleTypeParams}](
               ..$implicitTypeables
-            ): Typeable[${dataInfo.dataType}] = $typeableBody
+            ): $typeableTpe = $typeableBody
           """)
       } else {
-        Seq(
-          q"""implicit def $typeableName
-             [..${dataInfo.simpleTypeParams}]: Typeable[${dataInfo.dataType}] =
+        if (dataInfo.simpleTypeParams.nonEmpty) {
+          Seq(
+            q"""implicit def $typeableName
+              [..${dataInfo.simpleTypeParams}]: $typeableTpe =
             $typeableBody"""
-        )
+          )
+        } else {
+          Seq(
+            q"""implicit val ${Pat.Var.Term(typeableName)}: 
+                  $typeableTpe = $typeableBody"""
+          )
+        }
       }
     }
   }
@@ -171,30 +179,51 @@ object ShapelessStats {
         case (param, expr) => p"${Pat.Var.Term(param)} :: $expr"
       }
 
-      val generic =
-        q"""
-        implicit def $genericName[..${dataInfo.simpleTypeParams}]:
-          Generic.Aux[${dataInfo.dataType}, $reprType] =
-          new Generic[${dataInfo.dataType}] {
-            override type Repr = $reprType
-            override def to(f: ${dataInfo.dataType}): Repr =
-              $labelledGenericWithTypes.to(f)
-            override def from(r: Repr): ${dataInfo.dataType} = r match {
-              case ($fields) => ${dataInfo.dataCreating}
-            }
-        }"""
+      val generic = {
+        val body =
+          q"""new Generic[${dataInfo.dataType}] {
+              override type Repr = $reprType
+              override def to(f: ${dataInfo.dataType}): Repr =
+                $labelledGenericWithTypes.to(f)
+              override def from(r: Repr): ${dataInfo.dataType} =
+                r match {
+                  case ($fields) => ${dataInfo.dataCreating}
+                }
+              }
+           """
 
-      val labelledGeneric =
-        q"""
-        implicit def $labelledGenericName[..${dataInfo.simpleTypeParams}]:
-          LabelledGeneric.Aux[${dataInfo.dataType}, $labelledReprType] =
-          new LabelledGeneric[${dataInfo.dataType}] {
-            override type Repr = $labelledReprType
-            override def to(f: ${dataInfo.dataType}): Repr = $labelledFields
-            override def from(r: Repr): ${dataInfo.dataType} =
-              $genericWithTypes.from(r)
-          }
+        val tpe = t"Generic.Aux[${dataInfo.dataType}, $reprType]"
+
+        if (dataInfo.simpleTypeParams.nonEmpty) {
+          q"""implicit def $genericName[..${dataInfo.simpleTypeParams}]:$tpe =
+             $body"""
+        } else {
+          q"implicit val ${Pat.Var.Term(genericName)}:$tpe = $body"
+        }
+      }
+
+      val labelledGeneric = {
+        val body =
+          q"""new LabelledGeneric[${dataInfo.dataType}] {
+              override type Repr = $labelledReprType
+              override def to(f: ${dataInfo.dataType}): Repr =
+                $labelledFields
+              override def from(r: Repr): ${dataInfo.dataType} =
+                $genericWithTypes.from(r)
+              }
+           """
+
+        val tpe =
+          t"LabelledGeneric.Aux[${dataInfo.dataType}, $labelledReprType]"
+
+        if (dataInfo.simpleTypeParams.nonEmpty) {
+          q"""implicit def $labelledGenericName[..${dataInfo.simpleTypeParams}]:
+              $tpe = $body
           """
+        } else {
+          q"implicit val ${Pat.Var.Term(labelledGenericName)}: $tpe = $body"
+        }
+      }
 
       Seq(generic, labelledGeneric)
     }

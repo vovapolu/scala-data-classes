@@ -4,7 +4,7 @@ lazy val stalagmite = project
       Seq(
         organization := "com.fommil",
         sonatypeGithub := ("fommil", "stalagmite"),
-        licenses := Seq(Apache2),
+        licenses := Seq(LGPL3),
         scalaVersion := "2.12.3"
       )
     ),

@@ -3,7 +3,7 @@
 class A[T](i: Int, t: T, b: Boolean)
 //---
 {
-  final class A[T] private (private[this] var _i: Int, private[this] var _t: T, private[this] var _b: Boolean) {
+  final class A[T] private (private[this] val _i: Int, private[this] val _t: T, private[this] val _b: Boolean) {
     import _root_.scala._
     import _root_.scala.Predef._
 
@@ -11,8 +11,8 @@ class A[T](i: Int, t: T, b: Boolean)
     def t: T = this._t
     def b: Boolean = this._b
 
-    override val hashCode: Int = i.hashCode + 13 * (t.hashCode + 13 * b.hashCode)
-    override val toString: String = "A(" + (i.toString + "," + t.toString + "," + b.toString) + ")"
+    @transient override val hashCode: Int = i.hashCode + 13 * (t.hashCode + 13 * b.hashCode)
+    @transient override val toString: String = "A(" + (i.toString + "," + t.toString + "," + b.toString) + ")"
 
     def copy[N$T](i: Int = this.i, t: N$T = this.t, b: Boolean = this.b): A[N$T] = A(i, t, b)
   }
@@ -28,8 +28,7 @@ class A[T](i: Int, t: T, b: Boolean)
     def apply[T](i: Int, t: T, b: Boolean): A[T] = {
       val t_memoised = memoisedRef_cache.intern(t).asInstanceOf[T]
       val created = new A(i, t_memoised, b)
-      val safe = created.synchronized(created)
-      memoised_cache.intern(new AWithValueEquality[T](safe)).d
+      memoised_cache.intern(new AWithValueEquality[T](created)).d
     }
 
     private class AWithValueEquality[T](val d: A[T]) {
