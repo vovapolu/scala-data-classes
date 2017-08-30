@@ -3,6 +3,7 @@ class A(one: Int)
 //---
 {
   final class A private (private[this] val _one: Int) {
+
     def one: Int = this._one
 
     override def equals(thatAny: _root_.scala.Any): _root_.scala.Boolean = thatAny match {
@@ -11,6 +12,7 @@ class A(one: Int)
       case _ =>
         false
     }
+
 
     override def hashCode: _root_.scala.Int = one.hashCode
     override def toString: _root_.java.lang.String = "A(" + one.toString + ")"

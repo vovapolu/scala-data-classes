@@ -44,4 +44,3 @@ class Foo(s: Option[String])
     }
   }
 }
-

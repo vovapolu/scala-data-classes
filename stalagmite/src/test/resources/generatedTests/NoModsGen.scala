@@ -3,6 +3,7 @@ class A[T](i: Int, b: Boolean, t: T)
 //---
 {
   final class A[T] private (private[this] val _i: Int, private[this] val _b: Boolean, private[this] val _t: T) {
+
     def i: Int = this._i
     def b: Boolean = this._b
     def t: T = this._t
