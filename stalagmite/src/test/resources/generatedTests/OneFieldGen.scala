@@ -3,51 +3,47 @@ class A(one: Int)
 //---
 {
   final class A private (private[this] val _one: Int) {
-    import _root_.scala._
-    import _root_.scala.Predef._
     def one: Int = this._one
 
-    override def equals(thatAny: Any): Boolean = thatAny match {
+    override def equals(thatAny: _root_.scala.Any): _root_.scala.Boolean = thatAny match {
       case that: A =>
         (this eq that) || this.one == that.one
       case _ =>
         false
     }
 
-    override def hashCode: Int = one.hashCode
-    override def toString: String = "A(" + one.toString + ")"
+    override def hashCode: _root_.scala.Int = one.hashCode
+    override def toString: _root_.java.lang.String = "A(" + one.toString + ")"
 
     def copy(one: Int = this.one): A = A(one)
   }
 
   object A {
-    import _root_.scala._
-    import _root_.scala.Predef._
-
     def apply(one: Int): A = {
       val created = new A(one)
       created
     }
 
-    def unapply(that: A): Option[Int] = Some(that.one)
-    override def toString: String = "A"
+    def unapply(that: A): _root_.scala.Option[Int] = _root_.scala.Some(that.one)
+
+    override def toString: _root_.java.lang.String = "A"
 
     import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable }
     import _root_.shapeless.labelled.{ FieldType, field }
     import _root_.shapeless.syntax.singleton._
 
-    val one_tpe = Symbol("one").narrow
+    val one_tpe = 'one.narrow
 
     implicit val TypeableA: Typeable[A] = new Typeable[A] {
-      override def cast(t: Any): Option[A] = {
+      override def cast(t: _root_.scala.Any): _root_.scala.Option[A] = {
         t match {
           case f @ A(one) =>
-            Some(A(one))
+            _root_.scala.Some(A(one))
           case _ =>
-            None
+            _root_.scala.None
         }
       }
-      override def describe: String = "A[" + "Int" + "]"
+      override def describe: _root_.java.lang.String = "A[" + "Int" + "]"
     }
 
     implicit val GenericA: Generic.Aux[A, Int :: HNil] = new Generic[A] {

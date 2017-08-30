@@ -2,8 +2,8 @@ package testing.meta
 
 import fommil.stalagmite.data
 
-import _root_.scala._
-import _root_.scala.Predef._
+import _root_.scala.{ Boolean, Int, Option }
+import _root_.java.lang.String
 
 @data(
   product = true,

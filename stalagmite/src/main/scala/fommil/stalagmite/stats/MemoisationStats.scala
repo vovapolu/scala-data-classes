@@ -126,9 +126,9 @@ object MemoisationStats {
         q"""private class $wrapperName[..${dataInfo.simpleTypeParams}](
                 val d: ${dataInfo.dataType}
               ) {
-               override def toString: String = d.toString
-               override def hashCode: Int = d.hashCode
-               override def equals(o: Any): Boolean = o match {
+               override def toString: _root_.java.lang.String = d.toString
+               override def hashCode: _root_.scala.Int = d.hashCode
+               override def equals(o: _root_.scala.Any): _root_.scala.Boolean = o match {
                  case $wrapperCase
                  case _ => false
                }
@@ -138,7 +138,7 @@ object MemoisationStats {
       val memoisedRefsCache =
         q"""
            private[this] val memoisedRef_cache =
-            _root_.com.google.common.collect.Interners.newStrongInterner[AnyRef]()
+            _root_.com.google.common.collect.Interners.newStrongInterner[_root_.scala.AnyRef]()
          """
 
       Seq(
@@ -246,12 +246,12 @@ object MemoisationStats {
         q"""
            private[this] val memoisedRef_cache =
             new _root_.java.util.WeakHashMap[
-              AnyRef,
-              _root_.java.lang.ref.WeakReference[AnyRef]]
+              _root_.scala.AnyRef,
+              _root_.java.lang.ref.WeakReference[_root_.scala.AnyRef]]
          """
       val memoisedRefFun =
         q"""
-           private[this] def memoisedRef(ref: AnyRef): AnyRef = {
+           private[this] def memoisedRef(ref: _root_.scala.AnyRef): _root_.scala.AnyRef = {
                val first = {
                  val weak = memoisedRef_cache.get(ref)
                  if (weak == null) null else weak.get

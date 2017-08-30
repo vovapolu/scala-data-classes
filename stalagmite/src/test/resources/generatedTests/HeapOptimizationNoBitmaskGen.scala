@@ -2,36 +2,30 @@
 class Foo(s: Option[String])
 //---
 {
-  final class Foo private (private[this] val _s: Array[Byte], private[this] val _bitmask: Long) {
-    import _root_.scala._
-    import _root_.scala.Predef._
-
-    override def equals(thatAny: Any): Boolean = thatAny match {
+  final class Foo private (private[this] val _s: _root_.scala.Array[_root_.scala.Byte], private[this] val _bitmask: _root_.scala.Long) {
+    override def equals(thatAny: _root_.scala.Any): _root_.scala.Boolean = thatAny match {
       case that: Foo =>
         (this eq that) || this.s == that.s
       case _ =>
         false
     }
 
-    override def hashCode: Int = s.hashCode
-    override def toString: String = "Foo(" + s.toString + ")"
+    override def hashCode: _root_.scala.Int = s.hashCode
+    override def toString: _root_.java.lang.String = "Foo(" + s.toString + ")"
 
     def copy(s: Option[String] = this.s): Foo = Foo(s)
 
     def s: Option[String] = if (this._s == null) {
-      None
+      _root_.scala.None
     } else {
-      Some(new String(this._s))
+      _root_.scala.Some(new String(this._s))
     }
   }
 
   object Foo {
-    import _root_.scala._
-    import _root_.scala.Predef._
+    def unapply(that: Foo): _root_.scala.Option[Option[String]] = _root_.scala.Some(that.s)
 
-    def unapply(that: Foo): Option[Option[String]] = Some(that.s)
-
-    override def toString: String = "Foo"
+    override def toString: _root_.java.lang.String = "Foo"
 
     def apply(s: Option[String]): Foo = {
       val packed = pack(s)
@@ -39,9 +33,9 @@ class Foo(s: Option[String])
       created
     }
 
-    private def pack(s: Option[String]): (Array[Byte], Long) = {
-      var _bitmask: Long = 0L
-      val _s = if (s == None) {
+    private def pack(s: Option[String]): (_root_.scala.Array[_root_.scala.Byte], _root_.scala.Long) = {
+      var _bitmask: _root_.scala.Long = 0L
+      val _s = if (s == _root_.scala.None) {
         null
       } else {
         s.get.getBytes
@@ -50,3 +44,4 @@ class Foo(s: Option[String])
     }
   }
 }
+
