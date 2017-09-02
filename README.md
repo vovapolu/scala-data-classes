@@ -2,6 +2,8 @@
 
 An alternative to `case class` and extensions for `sealed trait` giving much more control over the internal representation of ADTs for [Functional Programming in Scala](https://leanpub.com/fp-scala-mortals) style.
 
+This project is twinned with [stalactite](https://gitlab.com/fommil/stalactite) (which provides performance optimisations and cleaner syntax for typeclass derivation).
+
 This project was sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta). A [blog post](https://vovapolu.github.io/scala/stalagmite/perf/2017/09/02/stalagmite-performance.html) was written at the end of the programme by Vovapolu with a summary of the initial achievements.
 
 ## Installation
