@@ -92,9 +92,9 @@ object HeapOptimizationStats {
             case Some(oBit) =>
               q"""
                  if ((_bitmask & (1 << ${Lit.Int(oBit)})) != 0) {
-                   None
+                   _root_.scala.None
                  } else {
-                   Some($fieldGetter)
+                   _root_.scala.Some($fieldGetter)
                  }
                """
             case None =>
@@ -102,9 +102,9 @@ object HeapOptimizationStats {
                 case t"Option[$_]" if dataInfo.dataMods.optimiseHeapOptions =>
                   q"""
                    if (this.$fieldName == null) {
-                     None
+                     _root_.scala.None
                    } else {
-                     Some($fieldGetter)
+                     _root_.scala.Some($fieldGetter)
                    }
                  """
                 case _ => fieldGetter
@@ -158,7 +158,7 @@ object HeapOptimizationStats {
                 Seq()
               }
               q"""
-                  if ($param == None) {
+                  if ($param == _root_.scala.None) {
                     _bitmask |= (1 << ${Lit.Int(oBit)})
                     ..$dummyVal
                   } else {
@@ -169,7 +169,7 @@ object HeapOptimizationStats {
               tpe match {
                 case t"Option[$_]" if dataInfo.dataMods.optimiseHeapOptions =>
                   q"""
-                   if ($param == None) {
+                   if ($param == _root_.scala.None) {
                      null
                    } else {
                      $fieldPack
@@ -187,7 +187,7 @@ object HeapOptimizationStats {
       }
 
       val optionalBitmask = if (dataInfo.hasBitmask) {
-        Seq(q"var _bitmask: Long = 0L")
+        Seq(q"var _bitmask: _root_.scala.Long = 0L")
       } else {
         Seq()
       }

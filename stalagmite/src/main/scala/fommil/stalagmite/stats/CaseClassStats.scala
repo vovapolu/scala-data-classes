@@ -59,8 +59,8 @@ object CaseClassStats {
       }
       Seq(
         q"""def unapply[..${dataInfo.simpleTypeParams}](
-            that: ${dataInfo.dataType}): Option[$tupleTypes] =
-         Some($tupleArgs)"""
+            that: ${dataInfo.dataType}): _root_.scala.Option[$tupleTypes] =
+          _root_.scala.Some($tupleArgs)"""
       )
     }
   }
@@ -98,10 +98,11 @@ object CaseClassStats {
         Seq()
       } else {
         Seq(
-          q"""override def equals(thatAny: Any): Boolean = thatAny match {
-            case that: ${dataInfo.dataPatType} => $thatEqual
-            case _ => false
-         }"""
+          q"""override def equals(thatAny: _root_.scala.Any): _root_.scala.Boolean =
+              thatAny match {
+                case that: ${dataInfo.dataPatType} => $thatEqual
+                case _ => false
+              }"""
         )
       }
     }
@@ -113,19 +114,19 @@ object CaseClassStats {
         case (param, i) => p"case ${Lit.Int(i)} => this.$param"
       }
       Seq(
-        q"""def canEqual(that: Any): Boolean =
+        q"""def canEqual(that: _root_.scala.Any): _root_.scala.Boolean =
            that.isInstanceOf[${dataInfo.dataType}]""",
-        q"def productArity: Int = ${Lit.Int(dataInfo.classParams.length)}",
-        q"""def productElement(n: Int): Any =
+        q"def productArity: _root_.scala.Int = ${Lit.Int(dataInfo.classParams.length)}",
+        q"""def productElement(n: _root_.scala.Int): _root_.scala.Any =
          n match {
             ..case $casesForElements
-            case _ => throw new IndexOutOfBoundsException(n.toString())
+            case _ => throw new _root_.java.lang.IndexOutOfBoundsException(n.toString())
          }
        """,
-        q"""override def productPrefix: String =
+        q"""override def productPrefix: _root_.java.lang.String =
            ${Lit.String(dataInfo.name.value)}""",
-        q"""override def productIterator: Iterator[Any] =
-           scala.runtime.ScalaRunTime.typedProductIterator[Any](this)"""
+        q"""override def productIterator: _root_.scala.Iterator[_root_.scala.Any] =
+           _root_.scala.runtime.ScalaRunTime.typedProductIterator[_root_.scala.Any](this)"""
       )
     }
   }
@@ -147,11 +148,11 @@ object CaseClassStats {
 
       Seq(
         if (dataInfo.dataMods.memoiseHashCodeLazy) {
-          q"@transient override lazy val hashCode: Int = $hashCodeExpr"
+          q"@_root_.scala.transient override lazy val hashCode: _root_.scala.Int = $hashCodeExpr"
         } else if (dataInfo.dataMods.memoiseHashCode) {
-          q"@transient override val hashCode: Int = $hashCodeExpr"
+          q"@_root_.scala.transient override val hashCode: _root_.scala.Int = $hashCodeExpr"
         } else {
-          q"override def hashCode: Int = $hashCodeExpr"
+          q"override def hashCode: _root_.scala.Int = $hashCodeExpr"
         }
       )
     }
@@ -178,17 +179,17 @@ object CaseClassStats {
 
       Seq(
         if (dataInfo.dataMods.memoiseToStringLazy) {
-          q"@transient override lazy val toString: String = $toStringBody"
+          q"@_root_.scala.transient override lazy val toString: _root_.java.lang.String = $toStringBody"
         } else if (dataInfo.dataMods.memoiseToString) {
-          q"@transient override val toString: String = $toStringBody"
+          q"@_root_.scala.transient override val toString: _root_.java.lang.String = $toStringBody"
         } else {
-          q"override def toString: String = $toStringBody"
+          q"override def toString: _root_.java.lang.String = $toStringBody"
         }
       )
     }
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = Seq(
-      q"override def toString: String = ${Lit.String(dataInfo.name.value)}"
+      q"override def toString: _root_.java.lang.String = ${Lit.String(dataInfo.name.value)}"
     )
   }
 

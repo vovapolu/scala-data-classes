@@ -163,7 +163,7 @@ final case class DataInfo(name: Type.Name,
         val transformedType = typeWithoutOption match {
           case t"Boolean" if dataMods.optimiseHeapBooleans => None
           case t"String" if dataMods.optimiseHeapStrings =>
-            Some(t"Array[Byte]")
+            Some(t"_root_.scala.Array[_root_.scala.Byte]")
           case t => Some(t)
         }
 
@@ -172,7 +172,7 @@ final case class DataInfo(name: Type.Name,
 
     transformedParams ++ (
       if (hasBitmask) {
-        Seq((Term.Name("bitmask"), t"Long"))
+        Seq((Term.Name("bitmask"), t"_root_.scala.Long"))
       } else {
         Seq()
       }

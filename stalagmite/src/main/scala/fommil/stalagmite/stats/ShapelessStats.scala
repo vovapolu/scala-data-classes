@@ -15,7 +15,7 @@ object ShapelessStats {
 
       val typeSymbols = dataInfo.classParamNames.map(
         name => q"""val ${Pat.Var.Term(Term.Name(name.value + "_tpe"))} =
-            Symbol(${Lit.String(name.value)}).narrow"""
+            ${Lit.Symbol(scala.Symbol(name.value))}.narrow"""
       )
 
       Seq(
@@ -109,14 +109,14 @@ object ShapelessStats {
       val typeableBody =
         q"""
            new Typeable[${dataInfo.dataType}] {
-             override def cast(t: Any): Option[${dataInfo.dataType}] = {
+             override def cast(t: _root_.scala.Any): _root_.scala.Option[${dataInfo.dataType}] = {
                ..$typeCasesWithImport
                t match {
-                 case f @ $dataWithTypeCases => Some(${dataInfo.dataCreating})
-                 case _                      => None
+                 case f @ $dataWithTypeCases => _root_.scala.Some(${dataInfo.dataCreating})
+                 case _                      => _root_.scala.None
                }
              }
-             override def describe: String = $describe
+             override def describe: _root_.java.lang.String = $describe
            }
           """
       val typeableTpe = t"Typeable[${dataInfo.dataType}]"

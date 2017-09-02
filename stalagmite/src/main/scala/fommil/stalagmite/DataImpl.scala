@@ -84,7 +84,7 @@ object DataImpl {
     val ctorParams = actualFields.map(generateField) ++
       (if (dataInfo.dataMods.weakMemoisation) {
          Seq(
-           param"@transient private val _key: ${MemoisationStatsHelper.keyType(dataInfo)}"
+           param"@_root_.scala.transient private val _key: ${MemoisationStatsHelper.keyType(dataInfo)}"
          )
        } else {
          Seq.empty
@@ -103,9 +103,6 @@ object DataImpl {
     q"""final class ${dataInfo.name}
           [..${dataInfo.simpleTypeParams}] private (..$ctorParams)
           extends ..${Seq(extendsClasses: _*)} {
-
-       import _root_.scala._
-       import _root_.scala.Predef._
 
        ..${builders.flatMap(_.classStats(dataInfo))}
     }"""
@@ -130,8 +127,6 @@ object DataImpl {
 
     q"""object ${Term.Name(dataInfo.name.value)}
           extends ..${Seq(extendsClasses: _*)} {
-       import _root_.scala._
-       import _root_.scala.Predef._
 
        ..${builders.flatMap(_.objectStats(dataInfo))}
     }"""

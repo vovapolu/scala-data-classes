@@ -2,33 +2,29 @@
 class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int])
 //---
 {
-  final class Foo private (private[this] var _s: Array[Byte], private[this] var _i: Int, private[this] var _bitmask: Long) extends _root_.scala.Serializable {
-    import _root_.scala._
-    import _root_.scala.Predef._
-
-    override def equals(thatAny: Any): Boolean = thatAny match {
+  final class Foo private (private[this] var _s: _root_.scala.Array[_root_.scala.Byte], private[this] var _i: Int, private[this] var _bitmask: _root_.scala.Long) extends _root_.scala.Serializable {
+    override def equals(thatAny: _root_.scala.Any): _root_.scala.Boolean = thatAny match {
       case that: Foo =>
         (this eq that) || this.a == that.a && this.b == that.b && this.s == that.s && this.i == that.i
       case _ =>
         false
     }
 
-    override def hashCode: Int = a.hashCode + 13 * (b.hashCode + 13 * (s.hashCode + 13 * i.hashCode))
-    override def toString: String = "Foo(" + (a.toString + "," + b.toString + "," + s.toString + "," + i.toString) + ")"
+    override def hashCode: _root_.scala.Int = a.hashCode + 13 * (b.hashCode + 13 * (s.hashCode + 13 * i.hashCode))
+    override def toString: _root_.java.lang.String = "Foo(" + (a.toString + "," + b.toString + "," + s.toString + "," + i.toString) + ")"
 
     def copy(a: Option[Boolean] = this.a, b: Option[Boolean] = this.b, s: Option[String] = this.s, i: Option[Int] = this.i): Foo = Foo(a, b, s, i)
-
-    @throws[_root_.java.io.IOException]
-    private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    @_root_.scala.throws[_root_.java.io.IOException]
+    private[this] def writeObject(out: _root_.java.io.ObjectOutputStream): _root_.scala.Unit = {
       out.writeObject(a)
       out.writeObject(b)
       out.writeObject(s)
       out.writeObject(i)
     }
 
-    @throws[_root_.java.io.IOException]
-    @throws[_root_.java.lang.ClassNotFoundException]
-    private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+    @_root_.scala.throws[_root_.java.io.IOException]
+    @_root_.scala.throws[_root_.java.lang.ClassNotFoundException]
+    private[this] def readObject(in: _root_.java.io.ObjectInputStream): _root_.scala.Unit = {
       val a = in.readObject().asInstanceOf[Option[Boolean]]
       val b = in.readObject().asInstanceOf[Option[Boolean]]
       val s = in.readObject().asInstanceOf[Option[String]]
@@ -39,73 +35,65 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
       _bitmask = packed._3
     }
 
-    @throws[_root_.java.io.ObjectStreamException]
-    private[this] def readResolve(): Any = Foo(a, b, s, i)
-
+    @_root_.scala.throws[_root_.java.io.ObjectStreamException]
+    private[this] def readResolve(): _root_.scala.Any = Foo(a, b, s, i)
     def a: Option[Boolean] = if ((_bitmask & 1 << 0) != 0) {
-      None
+      _root_.scala.None
     } else {
-      Some((_bitmask & 1 << 1) != 0)
+      _root_.scala.Some((_bitmask & 1 << 1) != 0)
     }
-
     def b: Option[Boolean] = if ((_bitmask & 1 << 2) != 0) {
-      None
+      _root_.scala.None
     } else {
-      Some((_bitmask & 1 << 3) != 0)
+      _root_.scala.Some((_bitmask & 1 << 3) != 0)
     }
-
     def s: Option[String] = if (this._s == null) {
-      None
+      _root_.scala.None
     } else {
-      Some(new String(this._s))
+      _root_.scala.Some(new String(this._s))
     }
-
     def i: Option[Int] = if ((_bitmask & 1 << 4) != 0) {
-      None
+      _root_.scala.None
     } else {
-      Some(this._i)
+      _root_.scala.Some(this._i)
     }
   }
 
   object Foo extends _root_.scala.Serializable {
-    import _root_.scala._
-    import _root_.scala.Predef._
+    def unapply(that: Foo): _root_.scala.Option[(Option[Boolean], Option[Boolean], Option[String], Option[Int])] = _root_.scala.Some((that.a, that.b, that.s, that.i))
+    override def toString: _root_.java.lang.String = "Foo"
 
-    def unapply(that: Foo): Option[(Option[Boolean], Option[Boolean], Option[String], Option[Int])] = Some((that.a, that.b, that.s, that.i))
-
-    override def toString: String = "Foo"
-
-    @throws[_root_.java.io.IOException]
-    private[this] def writeObject(out: java.io.ObjectOutputStream): Unit = ()
-    @throws[_root_.java.io.IOException]
-    @throws[_root_.java.lang.ClassNotFoundException]
-    private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
-    @throws[_root_.java.io.ObjectStreamException]
-    private[this] def readResolve(): Any = Foo
+    @_root_.scala.throws[_root_.java.io.IOException]
+    private[this] def writeObject(out: _root_.java.io.ObjectOutputStream): _root_.scala.Unit = ()
+    @_root_.scala.throws[_root_.java.io.IOException]
+    @_root_.scala.throws[_root_.java.lang.ClassNotFoundException]
+    private[this] def readObject(in: _root_.java.io.ObjectInputStream): _root_.scala.Unit = ()
+    @_root_.scala.throws[_root_.java.io.ObjectStreamException]
+    private[this] def readResolve(): _root_.scala.Any = Foo
 
     import _root_.shapeless.{ ::, HNil, Generic, LabelledGeneric, Typeable }
     import _root_.shapeless.labelled.{ FieldType, field }
     import _root_.shapeless.syntax.singleton._
 
-    val a_tpe = Symbol("a").narrow
-    val b_tpe = Symbol("b").narrow
-    val s_tpe = Symbol("s").narrow
-    val i_tpe = Symbol("i").narrow
+    val a_tpe = 'a.narrow
+    val b_tpe = 'b.narrow
+    val s_tpe = 's.narrow
+    val i_tpe = 'i.narrow
 
     implicit def TypeableFoo(implicit T0: Typeable[Option[String]], T1: Typeable[Option[Int]], T2: Typeable[Option[Boolean]]): Typeable[Foo] = new Typeable[Foo] {
-      override def cast(t: Any): Option[Foo] = {
+      override def cast(t: _root_.scala.Any): _root_.scala.Option[Foo] = {
         import _root_.shapeless.TypeCase
         val TC0 = TypeCase[Option[String]]
         val TC1 = TypeCase[Option[Int]]
         val TC2 = TypeCase[Option[Boolean]]
         t match {
           case f @ Foo(TC2(a), TC2(b), TC0(s), TC1(i)) =>
-            Some(Foo(a, b, s, i))
+            _root_.scala.Some(Foo(a, b, s, i))
           case _ =>
-            None
+            _root_.scala.None
         }
       }
-      override def describe: String = "Foo[" + (T2.describe + "," + T2.describe + "," + T0.describe + "," + T1.describe) + "]"
+      override def describe: _root_.java.lang.String = "Foo[" + (T2.describe + "," + T2.describe + "," + T0.describe + "," + T1.describe) + "]"
     }
 
     implicit val GenericFoo: Generic.Aux[Foo, Option[Boolean] :: Option[Boolean] :: Option[String] :: Option[Int] :: HNil] = new Generic[Foo] {
@@ -129,28 +117,28 @@ class Foo(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[I
       created.synchronized(created)
     }
 
-    private def pack(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int]): (Array[Byte], Int, Long) = {
-      var _bitmask: Long = 0L
-      if (a == None) {
+    private def pack(a: Option[Boolean], b: Option[Boolean], s: Option[String], i: Option[Int]): (_root_.scala.Array[_root_.scala.Byte], Int, _root_.scala.Long) = {
+      var _bitmask: _root_.scala.Long = 0L
+      if (a == _root_.scala.None) {
         _bitmask |= 1 << 0
       } else {
         if (a.get) {
           _bitmask |= 1 << 1
         }
       }
-      if (b == None) {
+      if (b == _root_.scala.None) {
         _bitmask |= 1 << 2
       } else {
         if (b.get) {
           _bitmask |= 1 << 3
         }
       }
-      val _s = if (s == None) {
+      val _s = if (s == _root_.scala.None) {
         null
       } else {
         s.get.getBytes
       }
-      val _i = if (i == None) {
+      val _i = if (i == _root_.scala.None) {
         _bitmask |= 1 << 4
         0
       } else {

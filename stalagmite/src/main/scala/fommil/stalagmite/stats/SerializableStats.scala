@@ -26,7 +26,7 @@ object SerializableStats {
               q"out.writeUTF($param)"
             case _ =>
               if (dataInfo.dataMods.checkSerializable) {
-                q"out.writeObject($param: Serializable)"
+                q"out.writeObject($param: _root_.scala.Serializable)"
               } else {
                 q"out.writeObject($param)"
               }
@@ -34,9 +34,9 @@ object SerializableStats {
       }
       if (dataInfo.requiresToHaveVars) {
         Seq(q"""
-          @throws[_root_.java.io.IOException]
+          @_root_.scala.throws[_root_.java.io.IOException]
           private[this] def writeObject(
-            out: java.io.ObjectOutputStream): Unit = {
+            out: _root_.java.io.ObjectOutputStream): _root_.scala.Unit = {
             ..$writes
           }
         """)
@@ -47,9 +47,9 @@ object SerializableStats {
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =
       Seq(q"""
-          @throws[_root_.java.io.IOException]
+          @_root_.scala.throws[_root_.java.io.IOException]
           private[this] def writeObject(
-            out: java.io.ObjectOutputStream): Unit = ()
+            out: _root_.java.io.ObjectOutputStream): _root_.scala.Unit = ()
         """)
   }
 
@@ -89,9 +89,9 @@ object SerializableStats {
 
       if (dataInfo.requiresToHaveVars) {
         Seq(q"""
-          @throws[_root_.java.io.IOException]
-          @throws[_root_.java.lang.ClassNotFoundException]
-          private[this] def readObject(in: java.io.ObjectInputStream): Unit = {
+          @_root_.scala.throws[_root_.java.io.IOException]
+          @_root_.scala.throws[_root_.java.lang.ClassNotFoundException]
+          private[this] def readObject(in: _root_.java.io.ObjectInputStream): _root_.scala.Unit = {
             ..$reads
             ..$optionalPack
           }
@@ -103,24 +103,24 @@ object SerializableStats {
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] =
       Seq(q"""
-        @throws[_root_.java.io.IOException]
-        @throws[_root_.java.lang.ClassNotFoundException]
-        private[this] def readObject(in: java.io.ObjectInputStream): Unit = ()
+        @_root_.scala.throws[_root_.java.io.IOException]
+        @_root_.scala.throws[_root_.java.lang.ClassNotFoundException]
+        private[this] def readObject(in: _root_.java.io.ObjectInputStream): _root_.scala.Unit = ()
         """)
   }
 
   object DataReadResolveStats extends DataStats {
     override def classStats(dataInfo: DataInfo): Seq[Stat] = Seq(
       q"""
-          @throws[_root_.java.io.ObjectStreamException]
-          private[this] def readResolve(): Any = ${dataInfo.dataCreating}
+          @_root_.scala.throws[_root_.java.io.ObjectStreamException]
+          private[this] def readResolve(): _root_.scala.Any = ${dataInfo.dataCreating}
       """
     )
 
     override def objectStats(dataInfo: DataInfo): Seq[Stat] = Seq(
       q"""
-          @throws[_root_.java.io.ObjectStreamException]
-          private[this] def readResolve(): Any = ${dataInfo.termName}
+          @_root_.scala.throws[_root_.java.io.ObjectStreamException]
+          private[this] def readResolve(): _root_.scala.Any = ${dataInfo.termName}
         """
     )
   }
