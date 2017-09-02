@@ -53,7 +53,7 @@ addCommandAlias("fmt", ";sbt:scalafmt ;scalafmt ;test:scalafmt ;jmh:scalafmt")
 // WORKAROUND https://github.com/scalameta/paradise/issues/10
 scalacOptions in (Compile, console) ~= (_ filterNot (_ contains "paradise"))
 // WORKAROUND https://github.com/scalameta/paradise/issues/216
-publishArtifact in (Compile, packageDoc) := false
+sources in (Compile, doc) := Nil
 
 wartremoverWarnings in (Compile, compile) := Seq(
   Wart.AsInstanceOf,
