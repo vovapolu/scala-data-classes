@@ -1,23 +1,42 @@
 ![data and codata](https://pbs.twimg.com/media/C4puwPsVUAAPPW5.jpg)
 
-**This project is sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta)**
-
 An alternative to `case class` and extensions for `sealed trait` giving much more control over the internal representation of ADTs for [Functional Programming in Scala](https://leanpub.com/fp-scala-mortals) style.
+
+This project is twinned with [stalactite](https://gitlab.com/fommil/stalactite) (which provides performance optimisations and cleaner syntax for typeclass derivation).
+
+This project was sponsored by the [Scala Google Summer of Code](https://github.com/scala/scala-lang/blob/master/gsoc/2017.md#case-classes-a-la-carte-with-scalameta). A [blog post](https://vovapolu.github.io/scala/stalagmite/perf/2017/09/02/stalagmite-performance.html) was written at the end of the programme by Vovapolu with a summary of the initial achievements.
+
+## Installation
+
+### Maven Central
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fommil/stalagmite_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fommil/stalagmite_2.12)
+
+```scala
+addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full)
+libraryDependencies += "com.fommil" %% "stalagmite" % "<version>"
+```
+
+### Snapshots
+
+```scala
+addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full)
+
+resolvers += Resolver.sonatypeRepo("snapshots")
+libraryDependencies += "com.fommil" %% "stalagmite" % "<version + 0.0.1>-SNAPSHOT"
+```
+
+## Limitations
+
+Stalagmite is built using the next-generation Scala macro system [`scala.meta`](https://github.com/scalameta/paradise).
+
+Unfortunately `scala.meta` is not yet supported in IntelliJ, Scala IDE, ENSIME, Scaladocs nor the REPL. We await the acceptance of the Scala Center proposal [Production Ready Scala Macros](https://github.com/scalacenter/advisoryboard/pull/30).
+
+## Features
 
 The following features are currently being considered in [`src/test/scala/testing`](https://github.com/fommil/stalagmite/tree/master/src/test/scala/testing). If you have any further ideas, please comment on the issue tracker:
 
-## Beta Tester
-
-If you are brave enough to try out the regular `SNAPSHOT`, use
-
-```scala
-resolvers += Resolver.sonatypeRepo("snapshots")
-libraryDependencies += "com.fommil" %% "stalagmite" % "1.0.0-SNAPSHOT"
-```
-
-and report back any bugs or ideas that you have.
-
-## `final case class` parity
+### `final case class` parity
 
 ```scala
 @data(product = true, checkSerializable = false /*, companionExtends = true */)
@@ -40,7 +59,7 @@ User-defined methods and fields are being debated in [#5](https://github.com/fom
 
 Implicit instances of `shapeless.{Generic, LabelledGeneric, Typeable}` are generated on the companion. This saves shapeless from having to derive one at every call site, speeding up downstream compiles.
 
-## Memoisation
+### Memoisation
 
 Memoisation uses best endeavours to re-use existing instances instead of creating new ones.
 
@@ -66,7 +85,7 @@ See [#8](https://github.com/fommil/stalagmite/issues/8) for a way of speeding up
 
 We are using Guava's `{Weak,String}Interner` to implement memoisation, but what we want a `SoftReference` interner that uses a custom `Equality`.
 
-## Optimise Heap
+### Optimise Heap
 
 ```scala
 @data(optimiseHeapOptions = true, optimiseHeapStrings = true)
