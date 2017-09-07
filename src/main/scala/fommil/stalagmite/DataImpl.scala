@@ -221,6 +221,77 @@ object DataImpl {
     }
 }
 
+/**
+ * Data annotation
+ *
+ * @param product Adds methods from Product trait:
+ *                `productElement`, `productArity`, `productPrefix`, `productIterator`.
+ *                Default value is `false`.
+ *
+ * @param checkSerializable Adds in compile time validation
+ *                          that all class fields are `Serializable`
+ *                          Default value is `true`.
+ *
+ * @param companionExtends Make companion inherit corresponding `Function` class.
+ *                         Default value is `false`.
+ *
+ * @param serializable Adds support for Serialization:
+ *                     `readObject`, `writeObject` methods if necessary,
+ *                     `readResolve`.
+ *                     Default value is `true`.
+ *
+ * @param shapeless Adds shapeless helper objects:
+ *                  `Typeable`, `Generic`, `LabeledGeneric`.
+ *                  Default value is `true`.
+ *
+ * @param memoise Adds memoisation mechanism to the class.
+ *                If `memoiseStrong` is false the weak memosation is applied.
+ *                Weak memoisation currently removes `.equals` method at all.
+ *                See `memoiseEqualsByValue`.
+ *                Default value is `false`.
+ *
+ * @param memoiseStrong Applies strong memoisation instead of weak.
+ *                      Doesn't work without `memoise` flag.
+ *                      Default value is `false`.
+ *                      Default value is `false`.
+ *
+ * @param memoiseEqualsByValue If weak memoisation is used
+ *                             then adds regular `.equals` by value.
+ *                             Default value is `true`.
+ *
+ * @param memoiseHashCode Caches `.hashCode` to `val`
+ *                        Default value is `false`.
+ *
+ * @param memoiseHashCodeLazy Caches `.hashCode` to `lazy val`
+ *                            Default value is `false`.
+ *
+ * @param memoiseToString Caches `.toString` to `val`
+ *                        Default value is `false`.
+ *
+ * @param memoiseToStringLazy Caches `.toString` to `lazy val`
+ *                            Default value is `false`.
+ *
+ * @param memoiseRefs List of names that represent fields memoised in separate cache
+ *                    Default value is `false`.
+ *
+ * @param optimiseHeapOptions Packs options.
+ *                            If `Option` wraps primitive value,
+ *                            `Option` is packed into bitmask and
+ *                            inner primitive value becomes class fields.
+ *                            If `Option` wraps `AnyRef` value,
+ *                            inner `AnyRef` becomes nullable class field with
+ *                            `null` for the `None` case.
+ *                            Default value is `false`.
+ *
+ * @param optimiseHeapBooleans Packs `Boolean` fields into bitmask.
+ *                             With `optimiseHeapOptions` packs inner `Boolean`
+ *                             in case of `Option[Boolean]` fields
+ *                             Default value is `false`.
+ *
+ * @param optimiseHeapStrings Packs `String` fields to `Array[Byte]`.
+ *                            With `optimiseHeapOptions` packs `Option[String]`.
+ *                            Default value is `false`.
+ */
 class data(product: Boolean = false,
            checkSerializable: Boolean = true,
            companionExtends: Boolean = false,
@@ -229,7 +300,7 @@ class data(product: Boolean = false,
            // memoise mods
            memoise: Boolean = false,
            memoiseStrong: Boolean = false,
-           memoiseEqualsByValue: Boolean = false,
+           memoiseEqualsByValue: Boolean = true,
            memoiseHashCode: Boolean = false,
            memoiseHashCodeLazy: Boolean = false,
            memoiseToString: Boolean = false,

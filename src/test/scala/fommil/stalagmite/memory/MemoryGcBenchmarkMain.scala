@@ -22,19 +22,22 @@ object MemoryGcBenchmarkMain extends App {
 
   @data(
     memoise = true,
-    memoiseStrong = true
+    memoiseStrong = true,
+    memoiseEqualsByValue = false
   )
   class FooMeta(b: Boolean, s: String)
 
   @data(
-    memoise = true
+    memoise = true,
+    memoiseEqualsByValue = false
   )
   class FooMetaWeak(b: Boolean, s: String)
 
   @data(
     memoise = true,
     memoiseStrong = true,
-    memoiseRefs = Seq('s)
+    memoiseRefs = Seq('s),
+    memoiseEqualsByValue = false
   )
   class FooMetaWithRefs(b: Boolean, s: String)
 

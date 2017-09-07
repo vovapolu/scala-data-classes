@@ -94,7 +94,8 @@ object CaseClassStats {
       }
 
       if (dataInfo.dataMods.memoise &&
-          !dataInfo.dataMods.memoiseEqualsByValue) {
+          (!dataInfo.dataMods.memoiseEqualsByValue ||
+          dataInfo.dataMods.memoiseStrong)) {
         Seq()
       } else {
         Seq(
